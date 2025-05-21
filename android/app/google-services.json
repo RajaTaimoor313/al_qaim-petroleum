@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "123655572763",
+    "project_id": "al-qaim-6c510",
+    "storage_bucket": "al-qaim-6c510.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:123655572763:android:b879af28c29f91cbb217be",
+        "android_client_info": {
+          "package_name": "com.example.al_qaim"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCF2EEbMNp1IKfnOg0dNN02t4_Xfd8EE34"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

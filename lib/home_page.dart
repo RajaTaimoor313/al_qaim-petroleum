@@ -1,6 +1,8 @@
-import 'package:al_qaim/dash_board_tab.dart';
-import 'package:al_qaim/data_entry_tab.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'customer_tab.dart';
+import 'dash_board_tab.dart';
+import 'data_entry_tab.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -11,15 +13,47 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  final double _maxPanelWidth = 250.0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Test Firestore connectivity
+  void _testFirestore() async {
+    try {
+      print('Testing Firestore connectivity...');
+      await FirebaseFirestore.instance.collection('test').add({
+        'timestamp': FieldValue.serverTimestamp(),
+        'message': 'Hello from Al Qaim app',
+      });
+      print('Firestore test successful');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Firestore test successful'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      print('Firestore test error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Firestore test error: $e\nEnsure your device has internet access.',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+
     return Scaffold(
+      key: _scaffoldKey,
       appBar: PreferredSize(
-        preferredSize: Size.fromHeight(kToolbarHeight),
+        preferredSize: const Size.fromHeight(kToolbarHeight),
         child: ClipRRect(
-          borderRadius: BorderRadius.all(Radius.circular(15)),
+          borderRadius: const BorderRadius.all(Radius.circular(15)),
           child: AppBar(
             title: const Text(
               'AL QAIM PETROLEUM',
@@ -30,8 +64,21 @@ class _HomePageState extends State<HomePage> {
             ),
             centerTitle: true,
             backgroundColor: Colors.transparent,
+            leading: isMobile
+                ? IconButton(
+                    icon: const Icon(Icons.menu, color: Colors.white),
+                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
+                  )
+                : null,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.bug_report, color: Colors.white),
+                onPressed: _testFirestore,
+                tooltip: 'Test Firestore',
+              ),
+            ],
             flexibleSpace: Container(
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Colors.green, Colors.green],
                   begin: Alignment.topLeft,
@@ -42,33 +89,48 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
+      drawer: isMobile ? _buildDrawer() : null,
       body: Padding(
         padding: const EdgeInsets.all(4.0),
-        child: Row(
-          children: [
-            Container(
-              width: _maxPanelWidth,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.all(Radius.circular(15)),
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.green,
-                    Colors.green.shade800,
-                  ],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomRight,
-                ),
+        child: isMobile
+            ? _buildSelectedScreen()
+            : Row(
+                children: [
+                  Container(
+                    width: 250,
+                    decoration: const BoxDecoration(
+                      borderRadius: BorderRadius.all(Radius.circular(15)),
+                      gradient: LinearGradient(
+                        colors: [Colors.green, Colors.green],
+                        begin: Alignment.topRight,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    child: _buildPanelShow(),
+                  ),
+                  Expanded(
+                    child: Container(
+                      margin: const EdgeInsets.only(left: 8.0),
+                      child: _buildSelectedScreen(),
+                    ),
+                  ),
+                ],
               ),
-              child: _buildPanelShow(),
-            ),
-            Expanded(
-              child: Container(
-                margin: const EdgeInsets.only(left: 4.0, right: 4.0),
-                child: _buildSelectedScreen(),
-              ),
-            ),
-          ],
+      ),
+    );
+  }
+
+  Widget _buildDrawer() {
+    return Drawer(
+      child: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Colors.green, Colors.green],
+            begin: Alignment.topRight,
+            end: Alignment.bottomRight,
+          ),
         ),
+        child: _buildPanelShow(),
       ),
     );
   }
@@ -76,99 +138,89 @@ class _HomePageState extends State<HomePage> {
   Widget _buildPanelShow() {
     return ListView(
       children: [
-        _buildpanelItem(0, Icons.dashboard, 'Dashboard'),
-        _buildpanelItem(1, Icons.info, 'Add Data'),
-        _buildpanelItem(2, Icons.people, 'Customers'),
+        Container(
+          padding: const EdgeInsets.symmetric(vertical: 24.0),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.green, Colors.green],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
+          ),
+          child: Column(
+            children: [
+              Container(
+                height: 70,
+                width: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white,
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black,
+                      blurRadius: 8,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    Icons.local_gas_station,
+                    color: Colors.green.shade900,
+                    size: 40,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'AL QAIM PETROLEUM',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+        _buildPanelItem(0, Icons.dashboard, 'Dashboard'),
+        _buildPanelItem(1, Icons.info, 'Add Data'),
+        _buildPanelItem(2, Icons.people, 'Customers'),
       ],
     );
   }
 
-  Widget _buildpanelItem(int index, IconData icon, String title) {
-    return Container(
-      padding: const EdgeInsets.all(2.0),
-      child: ListTile(
-        leading: Icon(
-          icon,
+  Widget _buildPanelItem(int index, IconData icon, String title) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.white),
+      title: Text(
+        title,
+        style: TextStyle(
           color: Colors.white,
+          fontWeight:
+              _selectedIndex == index ? FontWeight.bold : FontWeight.normal,
         ),
-        title: Text(
-          title,
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight:
-                _selectedIndex == index ? FontWeight.bold : FontWeight.normal,
-          ),
-        ),
-        selected: _selectedIndex == index,
-        selectedColor: Colors.white,
-        onTap: () => setState(() {
-          _selectedIndex = index;
-        }),
       ),
+      selected: _selectedIndex == index,
+      selectedColor: Colors.white,
+      onTap: () {
+        setState(() => _selectedIndex = index);
+        if (MediaQuery.of(context).size.width < 600) Navigator.pop(context);
+      },
     );
   }
 
   Widget _buildSelectedScreen() {
     switch (_selectedIndex) {
       case 0:
-        return Dashboard();
+        return const Dashboard();
       case 1:
-        return AddData();
+        return const AddData();
       case 2:
-        return _buildCustomersContent();
+        return const Customers();
       default:
-        return Dashboard();
+        return const Dashboard();
     }
   }
-  
-  Widget _buildCustomersContent() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            spreadRadius: 1,
-            blurRadius: 5,
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Customer List',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 20),
-          Expanded(
-            child: ListView.builder(
-              itemCount: 10,
-              itemBuilder: (context, index) {
-                return Card(
-                  margin: EdgeInsets.only(bottom: 8),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.green,
-                      child: Text('${index + 1}'),
-                    ),
-                    title: Text('Customer ${index + 1}'),
-                    subtitle: Text('Last purchase: ${10000 + (index * 500)}'),
-                    trailing: Icon(Icons.arrow_forward_ios),
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-  
-
 }
