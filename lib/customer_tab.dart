@@ -34,12 +34,17 @@ class _CustomersState extends State<Customers> {
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final double padding = isMobile ? 12.0 : 16.0;
+    final double borderRadius = isMobile ? 12.0 : 15.0;
+    final double buttonSpacing = isMobile ? 8.0 : 10.0;
+    final double titleFontSize = isMobile ? 20.0 : 24.0;
+    final double buttonTextFontSize = isMobile ? 12.0 : 14.0;
 
     return Container(
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.shade200,
@@ -54,10 +59,11 @@ class _CustomersState extends State<Customers> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
+              Text(
                 'Customers',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold),
               ),
+              if (!isMobile) // Use regular buttons in desktop
               Row(
                 children: [
                   ElevatedButton.icon(
@@ -65,10 +71,10 @@ class _CustomersState extends State<Customers> {
                         _isLoading
                             ? null
                             : () => setState(() {
-                                  isAddingCustomer = true;
-                                  isViewingCustomers = false;
-                                  _clearForm();
-                                }),
+                              isAddingCustomer = true;
+                              isViewingCustomers = false;
+                              _clearForm();
+                            }),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           isAddingCustomer
@@ -80,17 +86,18 @@ class _CustomersState extends State<Customers> {
                       ),
                     ),
                     icon: const Icon(Icons.person_add, size: 20),
-                    label: const Text('Add Customer'),
+                      label: Text('Add Customer', 
+                          style: TextStyle(fontSize: buttonTextFontSize)),
                   ),
-                  const SizedBox(width: 10),
+                    SizedBox(width: buttonSpacing),
                   ElevatedButton.icon(
                     onPressed:
                         _isLoading
                             ? null
                             : () => setState(() {
-                                  isAddingCustomer = false;
-                                  isViewingCustomers = true;
-                                }),
+                              isAddingCustomer = false;
+                              isViewingCustomers = true;
+                            }),
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
                           isViewingCustomers
@@ -102,125 +109,206 @@ class _CustomersState extends State<Customers> {
                       ),
                     ),
                     icon: const Icon(Icons.people, size: 20),
-                    label: const Text('View Customers'),
+                      label: Text('View Customers', 
+                          style: TextStyle(fontSize: buttonTextFontSize)),
+                    ),
+                  ],
+                ),
+              if (isMobile) // Use icon buttons in mobile
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () => setState(() {
+                                isAddingCustomer = true;
+                                isViewingCustomers = false;
+                                _clearForm();
+                              }),
+                      icon: Icon(
+                        Icons.person_add,
+                        color: isAddingCustomer ? Colors.green.shade700 : Colors.green,
+                      ),
+                      tooltip: 'Add Customer',
+                    ),
+                    IconButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () => setState(() {
+                                isAddingCustomer = false;
+                                isViewingCustomers = true;
+                              }),
+                      icon: Icon(
+                        Icons.people,
+                        color: isViewingCustomers ? Colors.green.shade700 : Colors.green,
+                      ),
+                      tooltip: 'View Customers',
                   ),
                 ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          if (isAddingCustomer) _buildAddCustomerForm(),
+          SizedBox(height: isMobile ? 12.0 : 20.0),
+          if (isAddingCustomer) 
+            Expanded(
+              child: _buildAddCustomerForm(isMobile),
+            ),
           if (isViewingCustomers) ...[
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search customers by name or phone...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: isMobile ? 8.0 : 12.0,
+                        horizontal: isMobile ? 12.0 : 16.0,
+                      ),
+                    ),
+                    onChanged: (value) => setState(() => searchQuery = value.toLowerCase()),
+                  ),
+                ),
+                SizedBox(width: isMobile ? 8.0 : 12.0),
                 ElevatedButton(
                   onPressed: () => setState(() {}),
-                  child: const Text('Refresh'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 12.0 : 16.0,
+                      vertical: isMobile ? 8.0 : 10.0,
+                    ),
+                  ),
+                  child: Text('Refresh', 
+                    style: TextStyle(fontSize: buttonTextFontSize)),
                 ),
               ],
             ),
-            _buildViewCustomers(isMobile),
+            SizedBox(height: isMobile ? 12.0 : 16.0),
+            _buildCustomersList(isMobile),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildAddCustomerForm() {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          TextFormField(
-            controller: nameController,
-            decoration: InputDecoration(
-              labelText: 'Customer Name',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-            ),
-            validator:
-                (value) => value!.isEmpty ? 'Please enter customer name' : null,
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: phoneController,
-            decoration: InputDecoration(
-              labelText: 'Phone Number',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-            ),
-            keyboardType: TextInputType.phone,
-            validator:
-                (value) =>
-                    value!.isEmpty
-                        ? 'Please enter phone number'
-                        : (RegExp(r'^\d{10,}$').hasMatch(value)
-                            ? null
-                            : 'Invalid phone number'),
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: balanceController,
-            decoration: InputDecoration(
-              labelText: 'Previous Balance',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-            ),
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              if (value!.isEmpty) return 'Please enter previous balance';
-              final balance = double.tryParse(value);
-              if (balance == null) return 'Invalid number';
-              if (balance < -1000000 || balance > 1000000) {
-                return 'Balance must be between -1,000,000 and 1,000,000';
-              }
-              return null;
-            },
-          ),
-          const SizedBox(height: 16),
-          TextFormField(
-            controller: addressController,
-            decoration: InputDecoration(
-              labelText: 'Address',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-            ),
-            validator:
-                (value) => value!.isEmpty ? 'Please enter address' : null,
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isLoading ? null : _submitCustomerForm,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 32,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
+  Widget _buildAddCustomerForm(bool isMobile) {
+    final double spacing = isMobile ? 12.0 : 16.0;
+    
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: spacing * 1.5),
+            TextFormField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: 'Customer Name',
+                border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
               ),
-              child:
-                  _isLoading
-                      ? const SizedBox(
+              validator:
+                  (value) => value!.isEmpty ? 'Please enter customer name' : null,
+            ),
+            SizedBox(height: spacing),
+            TextFormField(
+              controller: phoneController,
+              decoration: InputDecoration(
+                labelText: 'Phone Number',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              keyboardType: TextInputType.phone,
+              validator:
+                  (value) =>
+                      value!.isEmpty
+                          ? 'Please enter phone number'
+                          : (RegExp(r'^\d{10,}$').hasMatch(value)
+                              ? null
+                              : 'Invalid phone number'),
+            ),
+            SizedBox(height: spacing),
+            TextFormField(
+              controller: balanceController,
+              decoration: InputDecoration(
+                labelText: 'Previous Balance',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value!.isEmpty) return 'Please enter previous balance';
+                final balance = double.tryParse(value);
+                if (balance == null) return 'Invalid number';
+                if (balance < 0) {
+                  return 'Balance must be a Positive Value';
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: spacing),
+            TextFormField(
+              controller: addressController,
+              decoration: InputDecoration(
+                labelText: 'CNIC',
+                hintText: '13-digit CNIC number (optional)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              keyboardType: TextInputType.number,
+              // Making CNIC field optional
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return null; // Optional field
+                }
+                // If provided, validate it has 13 digits
+                if (!RegExp(r'^\d{13}$').hasMatch(value)) {
+                  return 'CNIC should have 13 digits';
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: spacing + 4.0),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _submitCustomerForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 24.0 : 32.0,
+                    vertical: isMobile ? 10.0 : 12.0,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child:
+                    _isLoading
+                        ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
@@ -228,37 +316,26 @@ class _CustomersState extends State<Customers> {
                             color: Colors.white,
                           ),
                         )
-                      : const Text('Submit', style: TextStyle(fontSize: 16)),
+                        : Text(
+                            'Submit', 
+                            style: TextStyle(
+                              fontSize: isMobile ? 14.0 : 16.0
+                            )
+                          ),
+              ),
             ),
-          ),
-        ],
+            // Add padding below submit button for any device
+            SizedBox(height: spacing * 4),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildViewCustomers(bool isMobile) {
+  Widget _buildCustomersList(bool isMobile) {
     return Expanded(
-      child: Column(
-        children: [
-          TextField(
-            controller: searchController,
-            decoration: InputDecoration(
-              hintText: 'Search customers by name or phone...',
-              prefixIcon: const Icon(Icons.search),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade100,
-            ),
-            onChanged:
-                (value) => setState(() => searchQuery = value.toLowerCase()),
-          ),
-          const SizedBox(height: 16),
-          Expanded(
             child: StreamBuilder<QuerySnapshot>(
-              stream:
-                  FirebaseFirestore.instance
+        stream: FirebaseFirestore.instance
                       .collection('customers')
                       .snapshots(),
               builder: (context, snapshot) {
@@ -283,16 +360,11 @@ class _CustomersState extends State<Customers> {
                   );
                 }
 
-                final customers =
-                    snapshot.data!.docs.where((doc) {
+          final customers = snapshot.data!.docs.where((doc) {
                       final data = doc.data() as Map<String, dynamic>;
-                      final name =
-                          data['name_lower']?.toLowerCase() ??
-                          data['name']?.toLowerCase() ??
-                          '';
+            final name = data['name_lower']?.toLowerCase() ?? data['name']?.toLowerCase() ?? '';
                       final phone = data['phone']?.toLowerCase() ?? '';
-                      return name.contains(searchQuery) ||
-                          phone.contains(searchQuery);
+            return name.contains(searchQuery) || phone.contains(searchQuery);
                     }).toList();
 
                 return ListView.builder(
@@ -300,35 +372,57 @@ class _CustomersState extends State<Customers> {
                   itemBuilder: (context, index) {
                     final customer = customers[index];
                     final data = customer.data() as Map<String, dynamic>;
+                    final balance = data['balance'] is num ? (data['balance'] as num).toDouble() : 0.0;
+                    
                     return Card(
-                      margin: const EdgeInsets.symmetric(vertical: 8),
+                margin: EdgeInsets.symmetric(vertical: isMobile ? 4.0 : 8.0),
                       elevation: 2,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.all(16),
+                  contentPadding: EdgeInsets.symmetric(
+                    vertical: isMobile ? 8.0 : 16.0,
+                    horizontal: isMobile ? 12.0 : 16.0,
+                  ),
                         title: Text(
                           data['name'],
-                          style: const TextStyle(
-                            fontSize: 20,
+                    style: TextStyle(
+                      fontSize: isMobile ? 16.0 : 20.0,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        subtitle: Text(
-                          data['phone'],
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade600,
-                          ),
+                        subtitle: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Text(
+                                  'Balance: ',
+                                  style: TextStyle(
+                                    fontSize: isMobile ? 12.0 : 14.0,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                                Text(
+                                  'Rs. ${balance.toStringAsFixed(2)}',
+                                  style: TextStyle(
+                                    fontSize: isMobile ? 12.0 : 14.0,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.red,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
                         trailing: ElevatedButton(
                           onPressed: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder:
-                                    (context) => CustomerDetailsPage(
+                          builder: (context) => CustomerDetailsPage(
                                       customerId: customer.id,
                                     ),
                               ),
@@ -340,17 +434,23 @@ class _CustomersState extends State<Customers> {
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
                             ),
-                          ),
-                          child: const Text('View'),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile ? 8.0 : 12.0,
+                        vertical: isMobile ? 4.0 : 8.0,
+                      ),
+                    ),
+                    child: Text(
+                      'View',
+                      style: TextStyle(
+                        fontSize: isMobile ? 12.0 : 14.0,
+                      ),
+                    ),
                         ),
                       ),
                     );
                   },
                 );
               },
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -362,11 +462,13 @@ class _CustomersState extends State<Customers> {
         print('Submitting customer form...');
         final name = nameController.text.trim();
         final phone = phoneController.text.trim();
-        final address = addressController.text.trim();
-        if (name.isEmpty || phone.isEmpty || address.isEmpty) {
-          throw Exception('Name, phone, or address cannot be empty');
+        final cnic = addressController.text.trim();
+        if (name.isEmpty || phone.isEmpty) {
+          throw Exception('Name or phone cannot be empty');
         }
-        print('Adding customer: name=$name, phone=$phone, address=$address, balance=${double.parse(balanceController.text.trim())}');
+        print(
+          'Adding customer: name=$name, phone=$phone, cnic=$cnic, balance=${double.parse(balanceController.text.trim())}',
+        );
         final docId =
             FirebaseFirestore.instance.collection('customers').doc().id;
         final docRef = FirebaseFirestore.instance
@@ -378,15 +480,15 @@ class _CustomersState extends State<Customers> {
           'name_lower': name.toLowerCase(),
           'phone': phone,
           'balance': double.parse(balanceController.text.trim()),
-          'address': address,
+          'cnic': cnic,
           'created_at': FieldValue.serverTimestamp(),
         });
 
         final snapshot = await docRef.get();
         print('Written data: ${snapshot.data()}');
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Customer added successfully with ID: $docId'),
+          const SnackBar(
+            content: Text('Customer added successfully'),
             backgroundColor: Colors.green,
           ),
         );
@@ -427,35 +529,52 @@ class CustomerDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final double padding = isMobile ? 12.0 : 16.0;
+    final double cardPadding = isMobile ? 12.0 : 16.0;
+    final double titleFontSize = isMobile ? 20.0 : 24.0;
+    final double headerFontSize = isMobile ? 18.0 : 20.0;
+    final double contentFontSize = isMobile ? 14.0 : 16.0;
+    final double avatarRadius = isMobile ? 24.0 : 30.0;
+    final double spacing = isMobile ? 12.0 : 16.0;
+    final double dividerHeight = isMobile ? 16.0 : 24.0;
+    
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Customer Details'),
+        title: Text(
+          'Customer Details',
+          style: TextStyle(
+            fontSize: isMobile ? 18.0 : 20.0,
+          ),
+        ),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         elevation: 0,
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(padding),
         child: StreamBuilder<DocumentSnapshot>(
           stream:
               FirebaseFirestore.instance
                   .collection('customers')
                   .doc(customerId)
                   .snapshots(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
+          builder: (context, customerSnapshot) {
+            if (customerSnapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            if (snapshot.hasError) {
-              print('Error fetching customer details: ${snapshot.error}');
+            if (customerSnapshot.hasError) {
+              print(
+                'Error fetching customer details: ${customerSnapshot.error}',
+              );
               return Center(
                 child: Text(
-                  'Error: ${snapshot.error}\nEnsure your device has internet access.',
+                  'Error: ${customerSnapshot.error}\nEnsure your device has internet access.',
                   style: const TextStyle(color: Colors.red),
                 ),
               );
             }
-            if (!snapshot.hasData || !snapshot.data!.exists) {
+            if (!customerSnapshot.hasData || !customerSnapshot.data!.exists) {
               return const Center(
                 child: Text(
                   'Customer not found',
@@ -464,175 +583,236 @@ class CustomerDetailsPage extends StatelessWidget {
               );
             }
 
-            final customer = snapshot.data!.data() as Map<String, dynamic>;
+            final customer =
+                customerSnapshot.data!.data() as Map<String, dynamic>;
 
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Card(
-                  elevation: 4,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+            return StreamBuilder<QuerySnapshot>(
+              stream:
+                  FirebaseFirestore.instance
+                      .collection('transactions')
+                      .where('customer_id', isEqualTo: customerId)
+                      .orderBy('date', descending: true)
+                      .limit(1) // Fetch only the latest transaction
+                      .snapshots(),
+              builder: (context, transactionSnapshot) {
+                double displayBalance = customer['balance']?.toDouble() ?? 0.0;
+                Color balanceColor =
+                    displayBalance >= 0 ? Colors.green : Colors.red;
+
+                if (transactionSnapshot.hasData &&
+                    transactionSnapshot.data!.docs.isNotEmpty) {
+                  final latestTransaction =
+                      transactionSnapshot.data!.docs.first.data()
+                          as Map<String, dynamic>;
+                  displayBalance =
+                      latestTransaction['new_balance']?.toDouble() ??
+                      displayBalance;
+                  balanceColor =
+                      displayBalance >= 0 ? Colors.green : Colors.red;
+                }
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.all(cardPadding),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            CircleAvatar(
-                              radius: 30,
-                              backgroundColor: Colors.green,
-                              child: Text(
-                                customer['name'][0].toUpperCase(),
-                                style: const TextStyle(
-                                  fontSize: 24,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    customer['name'],
-                                    style: const TextStyle(
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Customer ID: $customerId',
+                            Row(
+                              children: [
+                                CircleAvatar(
+                                  radius: avatarRadius,
+                                  backgroundColor: Colors.green,
+                                  child: Text(
+                                    customer['name'][0].toUpperCase(),
                                     style: TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      fontSize: avatarRadius * 0.8,
+                                      color: Colors.white,
                                     ),
                                   ),
-                                ],
-                              ),
+                                ),
+                                SizedBox(width: spacing),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        customer['name'],
+                                        style: TextStyle(
+                                          fontSize: titleFontSize,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Divider(height: dividerHeight),
+                            _buildInfoRow(
+                              Icons.phone,
+                              'Phone',
+                              customer['phone'],
+                              isMobile: isMobile,
+                            ),
+                            _buildInfoRow(
+                              Icons.credit_card,
+                              'CNIC',
+                              customer['cnic'] ?? 'N/A',
+                              isMobile: isMobile,
+                            ),
+                            _buildInfoRow(
+                              Icons.account_balance_wallet,
+                              'Balance',
+                              displayBalance.toString(),
+                              valueColor: balanceColor,
+                              isMobile: isMobile,
+                            ),
+                            _buildInfoRow(
+                              Icons.calendar_today,
+                              'Created',
+                              customer['created_at'] != null
+                                  ? DateFormat('dd/MM/yyyy').format(
+                                    (customer['created_at'] as Timestamp)
+                                        .toDate(),
+                                  )
+                                  : 'N/A',
+                              isMobile: isMobile,
                             ),
                           ],
                         ),
-                        const Divider(height: 24),
-                        _buildInfoRow(Icons.phone, 'Phone', customer['phone']),
-                        _buildInfoRow(
-                          Icons.home,
-                          'Address',
-                          customer['address'],
-                        ),
-                        _buildInfoRow(
-                          Icons.account_balance_wallet,
-                          'Balance',
-                          customer['balance'].toString(),
-                          valueColor:
-                              customer['balance'] >= 0
-                                  ? Colors.green
-                                  : Colors.red,
-                        ),
-                        _buildInfoRow(
-                          Icons.calendar_today,
-                          'Created',
-                          customer['created_at'] != null
-                              ? DateFormat('dd/MM/yyyy').format(
-                                    (customer['created_at'] as Timestamp).toDate(),
-                                  )
-                              : 'N/A',
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Transaction History',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream:
-                        FirebaseFirestore.instance
-                            .collection('transactions')
-                            .where('customer_id', isEqualTo: customerId)
-                            .orderBy('date', descending: true)
-                            .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-                      if (snapshot.hasError) {
-                        print('Error fetching transactions: ${snapshot.error}');
-                        return Center(
-                          child: Text(
-                            'Error: ${snapshot.error}\nEnsure your device has internet access.',
-                            style: const TextStyle(color: Colors.red),
-                          ),
-                        );
-                      }
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.history, size: 48, color: Colors.grey),
-                              SizedBox(height: 16),
-                              Text(
-                                'No transaction history found',
-                                style: TextStyle(color: Colors.grey),
+                    SizedBox(height: spacing + 4.0),
+                    Text(
+                      'Transaction History',
+                      style: TextStyle(
+                        fontSize: headerFontSize,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    SizedBox(height: spacing),
+                    Expanded(
+                      child: StreamBuilder<QuerySnapshot>(
+                        stream:
+                            FirebaseFirestore.instance
+                                .collection('transactions')
+                                .where('customer_id', isEqualTo: customerId)
+                                .orderBy('date', descending: true)
+                                .snapshots(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+                          if (snapshot.hasError) {
+                            print(
+                              'Error fetching transactions: ${snapshot.error}',
+                            );
+                            return Center(
+                              child: Text(
+                                'Error: ${snapshot.error}\nEnsure your device has internet access.',
+                                style: const TextStyle(color: Colors.red),
                               ),
-                            ],
-                          ),
-                        );
-                      }
-
-                      final transactions = snapshot.data!.docs;
-
-                      return ListView.builder(
-                        itemCount: transactions.length,
-                        itemBuilder: (context, index) {
-                          final transaction =
-                              transactions[index].data()
-                                  as Map<String, dynamic>;
-                          final date =
-                              (transaction['date'] as Timestamp).toDate();
-                          return Card(
-                            margin: const EdgeInsets.symmetric(vertical: 8),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: ListTile(
-                              contentPadding: const EdgeInsets.all(16),
-                              title: Text(
-                                'Date: ${DateFormat('dd/MM/yyyy').format(date)}',
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              subtitle: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
+                            );
+                          }
+                          if (!snapshot.hasData ||
+                              snapshot.data!.docs.isEmpty) {
+                            return const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    'Amount Paid: ${transaction['amount_paid']}',
+                                  Icon(
+                                    Icons.history,
+                                    size: 48,
+                                    color: Colors.grey,
                                   ),
+                                  SizedBox(height: 16),
                                   Text(
-                                    'Amount Taken: ${transaction['amount_taken']}',
-                                  ),
-                                  Text(
-                                    'New Balance: ${transaction['new_balance']}',
+                                    'No transaction history found',
+                                    style: TextStyle(color: Colors.grey),
                                   ),
                                 ],
                               ),
-                            ),
+                            );
+                          }
+
+                          final transactions = snapshot.data!.docs;
+
+                          return ListView.builder(
+                            itemCount: transactions.length,
+                            itemBuilder: (context, index) {
+                              final transaction =
+                                  transactions[index].data()
+                                      as Map<String, dynamic>;
+                              final date =
+                                  (transaction['date'] as Timestamp).toDate();
+                              return Card(
+                                margin: EdgeInsets.symmetric(
+                                  vertical: isMobile ? 4.0 : 8.0
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: ListTile(
+                                  contentPadding: EdgeInsets.all(
+                                    isMobile ? 12.0 : 16.0
+                                  ),
+                                  title: Text(
+                                    'Date: ${DateFormat('dd/MM/yyyy').format(date)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: isMobile ? 14.0 : 16.0,
+                                    ),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(height: isMobile ? 4.0 : 8.0),
+                                      Text(
+                                        'Amount Paid: ${transaction['amount_paid']}',
+                                        style: TextStyle(
+                                          fontSize: isMobile ? 12.0 : 14.0,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Amount Taken: ${transaction['amount_taken']}',
+                                        style: TextStyle(
+                                          fontSize: isMobile ? 12.0 : 14.0,
+                                        ),
+                                      ),
+                                      Text(
+                                        'New Balance: ${transaction['new_balance']}',
+                                        style: TextStyle(
+                                          fontSize: isMobile ? 12.0 : 14.0,
+                                          fontWeight: FontWeight.bold,
+                                          color: transaction['new_balance'] >= 0 
+                                            ? Colors.green 
+                                            : Colors.red,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
                           );
                         },
-                      );
-                    },
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         ),
@@ -645,20 +825,27 @@ class CustomerDetailsPage extends StatelessWidget {
     String label,
     String value, {
     Color? valueColor,
+    bool isMobile = false,
   }) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      padding: EdgeInsets.symmetric(vertical: isMobile ? 4.0 : 8.0),
       child: Row(
         children: [
-          Icon(icon, color: Colors.green),
-          const SizedBox(width: 8),
+          Icon(icon, color: Colors.green, size: isMobile ? 16.0 : 20.0),
+          SizedBox(width: isMobile ? 4.0 : 8.0),
           Text(
             '$label: ',
-            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: TextStyle(
+              fontWeight: FontWeight.bold, 
+              fontSize: isMobile ? 14.0 : 16.0
+            ),
           ),
           Text(
             value,
-            style: TextStyle(fontSize: 16, color: valueColor ?? Colors.black),
+            style: TextStyle(
+              fontSize: isMobile ? 14.0 : 16.0, 
+              color: valueColor ?? Colors.black
+            ),
           ),
         ],
       ),

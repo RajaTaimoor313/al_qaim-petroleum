@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'customer_tab.dart';
 import 'dash_board_tab.dart';
 import 'data_entry_tab.dart';
+import 'test_query.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,7 +16,7 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Test Firestore connectivity
+  // Test Firestore connectivity (keeping the function but removing from AppBar)
   void _testFirestore() async {
     try {
       print('Testing Firestore connectivity...');
@@ -44,9 +45,24 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
+  void _toggleDrawer() {
+    if (_scaffoldKey.currentState!.isDrawerOpen) {
+      _scaffoldKey.currentState!.closeDrawer();
+    } else {
+      _scaffoldKey.currentState!.openDrawer();
+    }
+  }
+
+  void _openTestQuery() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const TestQuery()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final mediaQuerySize = MediaQuery.of(context).size;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -64,18 +80,15 @@ class _HomePageState extends State<HomePage> {
             ),
             centerTitle: true,
             backgroundColor: Colors.transparent,
-            leading: isMobile
-                ? IconButton(
-                    icon: const Icon(Icons.menu, color: Colors.white),
-                    onPressed: () => _scaffoldKey.currentState?.openDrawer(),
-                  )
-                : null,
+            // Always show the menu button in AppBar for mobile
+            leading: isMobile 
+              ? IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  onPressed: _toggleDrawer,
+                )
+              : null,
             actions: [
-              IconButton(
-                icon: const Icon(Icons.bug_report, color: Colors.white),
-                onPressed: _testFirestore,
-                tooltip: 'Test Firestore',
-              ),
+              // Remove debug button
             ],
             flexibleSpace: Container(
               decoration: const BoxDecoration(
@@ -89,48 +102,66 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      drawer: isMobile ? _buildDrawer() : null,
-      body: Padding(
-        padding: const EdgeInsets.all(4.0),
-        child: isMobile
-            ? _buildSelectedScreen()
-            : Row(
+      drawer: isMobile 
+        ? Drawer(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.green, Colors.green],
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: Column(
                 children: [
-                  Container(
-                    width: 250,
-                    decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      gradient: LinearGradient(
-                        colors: [Colors.green, Colors.green],
-                        begin: Alignment.topRight,
-                        end: Alignment.bottomRight,
-                      ),
+                  AppBar(
+                    automaticallyImplyLeading: true,
+                    backgroundColor: Colors.transparent,
+                    elevation: 0,
+                    // This adds the automatic back button
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                    child: _buildPanelShow(),
                   ),
                   Expanded(
-                    child: Container(
-                      margin: const EdgeInsets.only(left: 8.0),
-                      child: _buildSelectedScreen(),
-                    ),
+                    child: _buildPanelShow(),
                   ),
                 ],
               ),
-      ),
-    );
-  }
-
-  Widget _buildDrawer() {
-    return Drawer(
-      child: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.green, Colors.green],
-            begin: Alignment.topRight,
-            end: Alignment.bottomRight,
-          ),
+            ),
+          )
+        : null,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(4.0),
+          child: isMobile
+              ? _buildSelectedScreen()
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 250,
+                      decoration: const BoxDecoration(
+                        borderRadius: BorderRadius.all(Radius.circular(15)),
+                        gradient: LinearGradient(
+                          colors: [Colors.green, Colors.green],
+                          begin: Alignment.topRight,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                      child: _buildPanelShow(),
+                    ),
+                    Expanded(
+                      child: Container(
+                        height: mediaQuerySize.height - kToolbarHeight - 8, // SafeArea height adjusting for padding
+                        margin: const EdgeInsets.only(left: 8.0),
+                        child: _buildSelectedScreen(),
+                      ),
+                    ),
+                  ],
+                ),
         ),
-        child: _buildPanelShow(),
       ),
     );
   }
@@ -148,6 +179,7 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
                 height: 70,
@@ -206,12 +238,27 @@ class _HomePageState extends State<HomePage> {
       selectedColor: Colors.white,
       onTap: () {
         setState(() => _selectedIndex = index);
-        if (MediaQuery.of(context).size.width < 600) Navigator.pop(context);
+        // Only close drawer, don't navigate on desktop
+        if (MediaQuery.of(context).size.width < 600) {
+          Navigator.pop(context);
+        }
       },
     );
   }
 
   Widget _buildSelectedScreen() {
+    // Use LayoutBuilder to get constraints passed to screen
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        return SizedBox(
+          height: constraints.maxHeight,
+          child: _getScreen(),
+        );
+      },
+    );
+  }
+  
+  Widget _getScreen() {
     switch (_selectedIndex) {
       case 0:
         return const Dashboard();

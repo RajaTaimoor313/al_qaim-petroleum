@@ -37,12 +37,20 @@ class _AddDataState extends State<AddData> {
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final double horizontalPadding = isMobile ? 12.0 : 16.0;
+    final double verticalPadding = isMobile ? 12.0 : 16.0;
+    final double borderRadius = isMobile ? 12.0 : 15.0;
+    final double fontSize = isMobile ? 20.0 : 24.0;
+    final double spacing = isMobile ? 12.0 : 16.0;
 
     return Container(
-      padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding, 
+        vertical: verticalPadding
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(borderRadius),
         boxShadow: [
           BoxShadow(
             color: Colors.grey.shade200,
@@ -57,20 +65,20 @@ class _AddDataState extends State<AddData> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
+              Text(
                 'Add New Transaction',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
               ),
-              const SizedBox(height: 20),
+              SizedBox(height: spacing + 4),
               _buildCustomerSearch(),
               if (errorMessage != null) ...[
-                const SizedBox(height: 8),
+                SizedBox(height: spacing - 8),
                 Text(
                   errorMessage!,
-                  style: const TextStyle(color: Colors.red, fontSize: 14),
+                  style: TextStyle(color: Colors.red, fontSize: isMobile ? 12 : 14),
                 ),
               ],
-              const SizedBox(height: 16),
+              SizedBox(height: spacing),
               TextFormField(
                 controller: phoneController,
                 decoration: InputDecoration(
@@ -82,10 +90,11 @@ class _AddDataState extends State<AddData> {
                   fillColor: Colors.grey.shade50,
                   enabled: !customerFound,
                 ),
+                keyboardType: TextInputType.phone,
                 validator: (value) =>
                     value!.isEmpty ? 'Please enter phone number' : null,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: spacing),
               TextFormField(
                 controller: balanceController,
                 decoration: InputDecoration(
@@ -104,7 +113,7 @@ class _AddDataState extends State<AddData> {
                         ? null
                         : 'Invalid number'),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: spacing),
               InkWell(
                 onTap: customerFound ? null : () => _selectDate(context),
                 child: InputDecorator(
@@ -125,7 +134,7 @@ class _AddDataState extends State<AddData> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: spacing),
               TextFormField(
                 controller: amountPaidController,
                 decoration: InputDecoration(
@@ -137,6 +146,10 @@ class _AddDataState extends State<AddData> {
                   fillColor: Colors.grey.shade50,
                 ),
                 keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  // Trigger a rebuild to update the button state
+                  setState(() {});
+                },
                 validator: (value) {
                   if (value!.isEmpty) return 'Please enter amount paid';
                   final amount = double.tryParse(value);
@@ -147,7 +160,7 @@ class _AddDataState extends State<AddData> {
                   return null;
                 },
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: spacing),
               TextFormField(
                 controller: amountTakenController,
                 decoration: InputDecoration(
@@ -159,6 +172,10 @@ class _AddDataState extends State<AddData> {
                   fillColor: Colors.grey.shade50,
                 ),
                 keyboardType: TextInputType.number,
+                onChanged: (value) {
+                  // Trigger a rebuild to update the button state
+                  setState(() {});
+                },
                 validator: (value) {
                   if (value!.isEmpty) return 'Please enter amount taken';
                   final amount = double.tryParse(value);
@@ -169,31 +186,104 @@ class _AddDataState extends State<AddData> {
                   return null;
                 },
               ),
-              const SizedBox(height: 24),
+              SizedBox(height: spacing + 8),
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: customerFound ? _submitTransaction : null,
+                  onPressed: isSearching 
+                    ? null 
+                    : () async {
+                      try {
+                        // Prevent multiple submissions by checking if already processing
+                        if (isSearching) {
+                          print("Submission already in progress");
+                          return;
+                        }
+                        
+                        // Validate form
+                        if (!customerFound || 
+                            selectedCustomerId == null || 
+                            amountPaidController.text.trim().isEmpty ||
+                            amountTakenController.text.trim().isEmpty) {
+                          print("Button pressed but form is not ready");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please select a customer and enter all required values'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                        
+                        if (double.tryParse(amountPaidController.text.trim()) == null ||
+                            double.tryParse(amountTakenController.text.trim()) == null) {
+                          print("Invalid number format in amount fields");
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Please enter valid numbers for amount fields'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          return;
+                        }
+                        
+                        print("Button pressed, form is ready");
+                        await _submitTransaction();
+                      } catch (e) {
+                        print("Error triggering form submission: $e");
+                        if (mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                          setState(() => isSearching = false);
+                        }
+                      }
+                    },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
                     foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 15,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 24 : 32,
+                      vertical: isMobile ? 12 : 15,
                     ),
                     disabledBackgroundColor: Colors.grey,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text(
-                    'Add',
+                  child: isSearching 
+                    ? const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Text(
+                            'Processing...',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
+                        ],
+                      )
+                    : Text(
+                        'Add',
+                        style: TextStyle(
+                          fontSize: isMobile ? 14 : 16, 
+                          fontWeight: FontWeight.bold
+                        ),
                   ),
                 ),
               ),
               if (customerFound) ...[
-                const SizedBox(height: 12),
+                SizedBox(height: spacing - 4),
                 SizedBox(
                   width: double.infinity,
                   child: TextButton(
@@ -210,6 +300,9 @@ class _AddDataState extends State<AddData> {
   }
 
   Widget _buildCustomerSearch() {
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final double suggestionMaxHeight = isMobile ? 120.0 : 150.0;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -262,15 +355,22 @@ class _AddDataState extends State<AddData> {
               ],
             ),
             margin: const EdgeInsets.only(top: 4),
-            constraints: const BoxConstraints(maxHeight: 150),
+            constraints: BoxConstraints(maxHeight: suggestionMaxHeight),
             child: ListView.builder(
               shrinkWrap: true,
               itemCount: customerSuggestions.length,
               itemBuilder: (context, index) {
                 final customer = customerSuggestions[index];
                 return ListTile(
-                  title: Text(customer['name']),
-                  subtitle: Text(customer['phone']),
+                  dense: isMobile,
+                  title: Text(
+                    customer['name'] ?? '',
+                    style: TextStyle(fontSize: isMobile ? 14 : 16),
+                  ),
+                  subtitle: Text(
+                    customer['phone'] ?? '',
+                    style: TextStyle(fontSize: isMobile ? 12 : 14),
+                  ),
                   onTap: () => _selectCustomer(customer),
                 );
               },
@@ -318,15 +418,48 @@ class _AddDataState extends State<AddData> {
   }
 
   void _selectCustomer(Map<String, dynamic> customer) {
+    try {
+      print('Selecting customer: ${customer['name']}, balance: ${customer['balance']}');
+      
+      // Format balance properly
+      String formattedBalance = '0';
+      if (customer['balance'] != null) {
+        if (customer['balance'] is num) {
+          formattedBalance = customer['balance'].toString();
+        } else if (customer['balance'] is String) {
+          // Try to parse and format if it's a string
+          final balanceValue = double.tryParse(customer['balance']);
+          if (balanceValue != null) {
+            formattedBalance = balanceValue.toString();
+          }
+        }
+      }
+      
     setState(() {
       selectedCustomerId = customer['id'];
       customerNameController.text = customer['name'] ?? '';
       phoneController.text = customer['phone'] ?? '';
-      balanceController.text = customer['balance']?.toString() ?? '0';
+        balanceController.text = formattedBalance;
       customerFound = true;
       customerSuggestions = [];
       errorMessage = null;
-    });
+        
+        // Make sure amount fields are initialized if empty
+        if (amountPaidController.text.isEmpty) {
+          amountPaidController.text = '0';
+        }
+        if (amountTakenController.text.isEmpty) {
+          amountTakenController.text = '0';
+        }
+      });
+      
+      print('Customer selected successfully, customerFound: $customerFound, ID: $selectedCustomerId');
+    } catch (e) {
+      print('Error in _selectCustomer: $e');
+      setState(() {
+        errorMessage = 'Error selecting customer: $e';
+      });
+    }
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -378,16 +511,13 @@ class _AddDataState extends State<AddData> {
         throw Exception('Amount paid, amount taken, or previous balance cannot be empty');
       }
 
-      final amountPaid = double.tryParse(amountPaidText);
-      final amountTaken = double.tryParse(amountTakenText);
-      final previousBalance = double.tryParse(previousBalanceText);
-      if (amountPaid == null || amountTaken == null || previousBalance == null) {
-        print('Step 2 Failed: Invalid numerical input');
-        throw Exception('Invalid numerical input: Ensure all amounts are valid numbers');
-      }
+      final amountPaid = double.tryParse(amountPaidText) ?? 0.0;
+      final amountTaken = double.tryParse(amountTakenText) ?? 0.0;
+      final previousBalance = double.tryParse(previousBalanceText) ?? 0.0;
+      
       print('Step 2 Passed: Parsed values - Amount Paid: $amountPaid, Amount Taken: $amountTaken, Previous Balance: $previousBalance');
 
-      // Calculate new balance
+      // Calculate new balance - Amount Paid reduces balance, Amount Taken increases it
       final newBalance = previousBalance - amountPaid + amountTaken;
       print('Step 3: Calculated new balance: $newBalance');
       if (newBalance < -1000000 || newBalance > 1000000) {
@@ -404,34 +534,64 @@ class _AddDataState extends State<AddData> {
       }
       print('Step 3 Passed: New balance is within range');
 
-      // Validate selectedDate
-      if (selectedDate == null) {
-        print('Step 4 Failed: Selected date is null');
-        throw Exception('Selected date is invalid');
-      }
+      // No need to validate selectedDate - it's always initialized
       print('Step 4 Passed: Selected date: $selectedDate');
 
-      // Perform Firestore operations (temporarily without transaction)
-      print('Step 5: Performing direct Firestore operations...');
-      final transactionRef = FirebaseFirestore.instance.collection('transactions').doc();
-      await transactionRef.set({
-        'customer_id': selectedCustomerId,
-        'customer_name': customerNameController.text.trim(),
-        'phone': phoneController.text.trim(),
-        'previous_balance': previousBalance,
-        'amount_paid': amountPaid,
-        'amount_taken': amountTaken,
-        'new_balance': newBalance,
-        'date': Timestamp.fromDate(selectedDate),
-      });
-      print('Step 5 Passed: Transaction data set successfully');
+      // Perform Firestore operations
+      print('Step 5: Performing Firestore operations...');
+      
+      try {
+        // Create the transaction data first
+        final transactionData = {
+          'customer_id': selectedCustomerId,
+          'customer_name': customerNameController.text.trim(),
+          'phone': phoneController.text.trim(),
+          'previous_balance': previousBalance,
+          'amount_paid': amountPaid,
+          'amount_taken': amountTaken,
+          'new_balance': newBalance,
+          'date': Timestamp.fromDate(selectedDate),
+          'created_at': FieldValue.serverTimestamp(),
+        };
+        
+        // Verify that we can access the customer document before proceeding
+        final customerDoc = await FirebaseFirestore.instance
+            .collection('customers')
+            .doc(selectedCustomerId)
+            .get();
+            
+        if (!customerDoc.exists) {
+          throw Exception('Customer document not found. The customer may have been deleted.');
+        }
+        
+        // Use a simple set/update approach instead of a transaction to reduce complexity
+        // 1. Add the transaction record
+        final transactionRef = await FirebaseFirestore.instance
+            .collection('transactions')
+            .add(transactionData);
+            
+        print('Transaction document created with ID: ${transactionRef.id}');
+        
+        // 2. Update the customer's balance
+        await FirebaseFirestore.instance
+            .collection('customers')
+            .doc(selectedCustomerId)
+            .update({'balance': newBalance});
+            
+        print('Customer balance updated successfully');
+      } catch (e) {
+        print('Firestore operation failed: $e');
+        throw Exception('Failed to save transaction: $e');
+      }
+      
+      print('Step 5 Passed: Transaction completed successfully');
 
       // Show success message
       if (!mounted) return;
       print('Step 6: Showing success message');
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Transaction added successfully (no balance update)'),
+          content: Text('Transaction added successfully and balance updated'),
           backgroundColor: Colors.green,
         ),
       );
@@ -475,7 +635,9 @@ class _AddDataState extends State<AddData> {
         ),
       );
     } finally {
+      if (mounted) {
       setState(() => isSearching = false);
+      }
       print('Step 7: Transaction process completed (success or failure)');
     }
   }
