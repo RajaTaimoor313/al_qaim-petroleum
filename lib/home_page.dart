@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'customer_tab.dart';
 import 'dash_board_tab.dart';
 import 'data_entry_tab.dart';
 import 'test_query.dart';
+import 'export_data.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -219,13 +221,19 @@ class _HomePageState extends State<HomePage> {
         _buildPanelItem(0, Icons.dashboard, 'Dashboard'),
         _buildPanelItem(1, Icons.info, 'Add Data'),
         _buildPanelItem(2, Icons.people, 'Customers'),
+        _buildPanelItem(3, Icons.file_download, 'Export'),
       ],
     );
   }
 
   Widget _buildPanelItem(int index, IconData icon, String title) {
     return ListTile(
-      leading: Icon(icon, color: Colors.white),
+      leading: Icon(
+        icon, 
+        color: Colors.white,
+        // Force a specific size to ensure visibility on web
+        size: 24,
+      ),
       title: Text(
         title,
         style: TextStyle(
@@ -266,6 +274,8 @@ class _HomePageState extends State<HomePage> {
         return const AddData();
       case 2:
         return const Customers();
+      case 3:
+        return const ExportData();
       default:
         return const Dashboard();
     }

@@ -18,6 +18,7 @@ class _CustomersState extends State<Customers> {
   final TextEditingController balanceController = TextEditingController();
   final TextEditingController addressController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
+  final TextEditingController pageNumberController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
@@ -28,6 +29,7 @@ class _CustomersState extends State<Customers> {
     balanceController.dispose();
     addressController.dispose();
     searchController.dispose();
+    pageNumberController.dispose();
     super.dispose();
   }
 
@@ -290,6 +292,31 @@ class _CustomersState extends State<Customers> {
                 return null;
               },
             ),
+            SizedBox(height: spacing),
+            TextFormField(
+              controller: pageNumberController,
+              decoration: InputDecoration(
+                labelText: 'Page Number',
+                hintText: 'Enter page number in register (optional)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              keyboardType: TextInputType.number,
+              // Making Page Number field optional
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return null; // Optional field
+                }
+                // If provided, validate it's a number
+                if (!RegExp(r'^\d+$').hasMatch(value)) {
+                  return 'Page Number should be a valid number';
+                }
+                return null;
+              },
+            ),
             SizedBox(height: spacing + 4.0),
             SizedBox(
               width: double.infinity,
@@ -463,11 +490,12 @@ class _CustomersState extends State<Customers> {
         final name = nameController.text.trim();
         final phone = phoneController.text.trim();
         final cnic = addressController.text.trim();
+        final pageNumber = pageNumberController.text.trim();
         if (name.isEmpty || phone.isEmpty) {
           throw Exception('Name or phone cannot be empty');
         }
         print(
-          'Adding customer: name=$name, phone=$phone, cnic=$cnic, balance=${double.parse(balanceController.text.trim())}',
+          'Adding customer: name=$name, phone=$phone, cnic=$cnic, pageNumber=$pageNumber, balance=${double.parse(balanceController.text.trim())}',
         );
         final docId =
             FirebaseFirestore.instance.collection('customers').doc().id;
@@ -481,6 +509,7 @@ class _CustomersState extends State<Customers> {
           'phone': phone,
           'balance': double.parse(balanceController.text.trim()),
           'cnic': cnic,
+          'page_number': pageNumber,
           'created_at': FieldValue.serverTimestamp(),
         });
 
@@ -519,6 +548,7 @@ class _CustomersState extends State<Customers> {
     phoneController.clear();
     balanceController.clear();
     addressController.clear();
+    pageNumberController.clear();
   }
 }
 
@@ -591,19 +621,23 @@ class CustomerDetailsPage extends StatelessWidget {
                   FirebaseFirestore.instance
                       .collection('transactions')
                       .where('customer_id', isEqualTo: customerId)
-                      .orderBy('date', descending: true)
-                      .limit(1) // Fetch only the latest transaction
                       .snapshots(),
-              builder: (context, transactionSnapshot) {
+              builder: (context, snapshot) {
                 double displayBalance = customer['balance']?.toDouble() ?? 0.0;
                 Color balanceColor =
                     displayBalance >= 0 ? Colors.green : Colors.red;
 
-                if (transactionSnapshot.hasData &&
-                    transactionSnapshot.data!.docs.isNotEmpty) {
-                  final latestTransaction =
-                      transactionSnapshot.data!.docs.first.data()
-                          as Map<String, dynamic>;
+                if (snapshot.hasData &&
+                    snapshot.data!.docs.isNotEmpty) {
+                  // Sort transactions to find the latest one
+                  final transactions = snapshot.data!.docs;
+                  transactions.sort((a, b) {
+                    final aDate = (a.data() as Map<String, dynamic>)['date'] as Timestamp;
+                    final bDate = (b.data() as Map<String, dynamic>)['date'] as Timestamp;
+                    return bDate.compareTo(aDate); // Descending order (newest first)
+                  });
+                  
+                  final latestTransaction = transactions.first.data() as Map<String, dynamic>;
                   displayBalance =
                       latestTransaction['new_balance']?.toDouble() ??
                       displayBalance;
@@ -669,6 +703,12 @@ class CustomerDetailsPage extends StatelessWidget {
                               isMobile: isMobile,
                             ),
                             _buildInfoRow(
+                              Icons.book,
+                              'Page Number',
+                              customer['page_number'] ?? 'N/A',
+                              isMobile: isMobile,
+                            ),
+                            _buildInfoRow(
                               Icons.account_balance_wallet,
                               'Balance',
                               displayBalance.toString(),
@@ -705,7 +745,6 @@ class CustomerDetailsPage extends StatelessWidget {
                             FirebaseFirestore.instance
                                 .collection('transactions')
                                 .where('customer_id', isEqualTo: customerId)
-                                .orderBy('date', descending: true)
                                 .snapshots(),
                         builder: (context, snapshot) {
                           if (snapshot.connectionState ==
@@ -714,17 +753,55 @@ class CustomerDetailsPage extends StatelessWidget {
                               child: CircularProgressIndicator(),
                             );
                           }
+                          
+                          // Handle Firestore index error
                           if (snapshot.hasError) {
-                            print(
-                              'Error fetching transactions: ${snapshot.error}',
-                            );
+                            final error = snapshot.error.toString();
+                            print('Error fetching transactions: $error');
+                            
+                            // Check if it's an index error
+                            if (error.contains('failed-precondition') && error.contains('index')) {
+                              return Center(
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(
+                                      Icons.error_outline,
+                                      size: 48,
+                                      color: Colors.orange,
+                                    ),
+                                    const SizedBox(height: 16),
+                                    const Text(
+                                      'No Transaction History',
+                                      style: TextStyle(
+                                        color: Colors.grey,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'Add transactions for this customer to see them here.',
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade600,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                            
                             return Center(
                               child: Text(
-                                'Error: ${snapshot.error}\nEnsure your device has internet access.',
+                                'Error loading transactions.\nPlease check your internet connection.',
+                                textAlign: TextAlign.center,
                                 style: const TextStyle(color: Colors.red),
                               ),
                             );
                           }
+                          
                           if (!snapshot.hasData ||
                               snapshot.data!.docs.isEmpty) {
                             return const Center(
@@ -746,7 +823,13 @@ class CustomerDetailsPage extends StatelessWidget {
                             );
                           }
 
+                          // Sort transactions by date in the app instead of in the query
                           final transactions = snapshot.data!.docs;
+                          transactions.sort((a, b) {
+                            final aDate = (a.data() as Map<String, dynamic>)['date'] as Timestamp;
+                            final bDate = (b.data() as Map<String, dynamic>)['date'] as Timestamp;
+                            return bDate.compareTo(aDate); // Descending order (newest first)
+                          });
 
                           return ListView.builder(
                             itemCount: transactions.length,
