@@ -1,1 +1,37 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"al-qaim-petroleum","appId":"1:89344993937:android:e782103a8b11c0736f2d30","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"al-qaim-petroleum","configurations":{"android":"1:89344993937:android:e782103a8b11c0736f2d30","web":"1:89344993937:web:fe24abfb681d63566f2d30","windows":"1:89344993937:web:10b07fa8c2963f766f2d30"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "al-qaim-petroleum",
+          "appId": "1:89344993937:android:e782103a8b11c0736f2d30",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "al-qaim-petroleum",
+          "configurations": {
+            "android": "1:89344993937:android:e782103a8b11c0736f2d30",
+            "web": "1:89344993937:web:fe24abfb681d63566f2d30",
+            "windows": "1:89344993937:web:10b07fa8c2963f766f2d30"
+          }
+        }
+      }
+    }
+  },
+  "hosting": {
+    "public": "build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
