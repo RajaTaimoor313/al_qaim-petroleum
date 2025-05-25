@@ -56,9 +56,9 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openTestQuery() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (context) => const TestQuery()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (context) => const TestQuery()));
   }
 
   @override
@@ -83,12 +83,13 @@ class _HomePageState extends State<HomePage> {
             centerTitle: true,
             backgroundColor: Colors.transparent,
             // Always show the menu button in AppBar for mobile
-            leading: isMobile 
-              ? IconButton(
-                  icon: const Icon(Icons.menu, color: Colors.white),
-                  onPressed: _toggleDrawer,
-                )
-              : null,
+            leading:
+                isMobile
+                    ? IconButton(
+                      icon: const Icon(Icons.menu, color: Colors.white),
+                      onPressed: _toggleDrawer,
+                    )
+                    : null,
             actions: [
               // Remove debug button
             ],
@@ -104,65 +105,71 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-      drawer: isMobile 
-        ? Drawer(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.green, Colors.green],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: Column(
-                children: [
-                  AppBar(
-                    automaticallyImplyLeading: true,
-                    backgroundColor: Colors.transparent,
-                    elevation: 0,
-                    // This adds the automatic back button
-                    leading: IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
+      drawer:
+          isMobile
+              ? Drawer(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.green, Colors.green],
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                  Expanded(
-                    child: _buildPanelShow(),
+                  child: Column(
+                    children: [
+                      AppBar(
+                        automaticallyImplyLeading: true,
+                        backgroundColor: Colors.transparent,
+                        elevation: 0,
+                        // This adds the automatic back button
+                        leading: IconButton(
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                      ),
+                      Expanded(child: _buildPanelShow()),
+                    ],
                   ),
-                ],
-              ),
-            ),
-          )
-        : null,
+                ),
+              )
+              : null,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(4.0),
-          child: isMobile
-              ? _buildSelectedScreen()
-              : Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 250,
-                      decoration: const BoxDecoration(
-                        borderRadius: BorderRadius.all(Radius.circular(15)),
-                        gradient: LinearGradient(
-                          colors: [Colors.green, Colors.green],
-                          begin: Alignment.topRight,
-                          end: Alignment.bottomRight,
+          child:
+              isMobile
+                  ? _buildSelectedScreen()
+                  : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 250,
+                        decoration: const BoxDecoration(
+                          borderRadius: BorderRadius.all(Radius.circular(15)),
+                          gradient: LinearGradient(
+                            colors: [Colors.green, Colors.green],
+                            begin: Alignment.topRight,
+                            end: Alignment.bottomRight,
+                          ),
+                        ),
+                        child: _buildPanelShow(),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height:
+                              mediaQuerySize.height -
+                              kToolbarHeight -
+                              8, // SafeArea height adjusting for padding
+                          margin: const EdgeInsets.only(left: 8.0),
+                          child: _buildSelectedScreen(),
                         ),
                       ),
-                      child: _buildPanelShow(),
-                    ),
-                    Expanded(
-                      child: Container(
-                        height: mediaQuerySize.height - kToolbarHeight - 8, // SafeArea height adjusting for padding
-                        margin: const EdgeInsets.only(left: 8.0),
-                        child: _buildSelectedScreen(),
-                      ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
         ),
       ),
     );
@@ -229,7 +236,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildPanelItem(int index, IconData icon, String title) {
     return ListTile(
       leading: Icon(
-        icon, 
+        icon,
         color: Colors.white,
         // Force a specific size to ensure visibility on web
         size: 24,
@@ -258,14 +265,11 @@ class _HomePageState extends State<HomePage> {
     // Use LayoutBuilder to get constraints passed to screen
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
-        return SizedBox(
-          height: constraints.maxHeight,
-          child: _getScreen(),
-        );
+        return SizedBox(height: constraints.maxHeight, child: _getScreen());
       },
     );
   }
-  
+
   Widget _getScreen() {
     switch (_selectedIndex) {
       case 0:

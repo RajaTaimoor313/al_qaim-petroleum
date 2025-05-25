@@ -63,56 +63,63 @@ class _CustomersState extends State<Customers> {
             children: [
               Text(
                 'Customers',
-                style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: titleFontSize,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               if (!isMobile) // Use regular buttons in desktop
-              Row(
-                children: [
-                  ElevatedButton.icon(
-                    onPressed:
-                        _isLoading
-                            ? null
-                            : () => setState(() {
-                              isAddingCustomer = true;
-                              isViewingCustomers = false;
-                              _clearForm();
-                            }),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isAddingCustomer
-                              ? Colors.green.shade700
-                              : Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
+                                isAddingCustomer = true;
+                                isViewingCustomers = false;
+                                _clearForm();
+                              }),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isAddingCustomer
+                                ? Colors.green.shade700
+                                : Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(Icons.person_add, size: 20),
+                      label: Text(
+                        'Add Customer',
+                        style: TextStyle(fontSize: buttonTextFontSize),
                       ),
                     ),
-                    icon: const Icon(Icons.person_add, size: 20),
-                      label: Text('Add Customer', 
-                          style: TextStyle(fontSize: buttonTextFontSize)),
-                  ),
                     SizedBox(width: buttonSpacing),
-                  ElevatedButton.icon(
-                    onPressed:
-                        _isLoading
-                            ? null
-                            : () => setState(() {
-                              isAddingCustomer = false;
-                              isViewingCustomers = true;
-                            }),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          isViewingCustomers
-                              ? Colors.green.shade700
-                              : Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
+                    ElevatedButton.icon(
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
+                                isAddingCustomer = false;
+                                isViewingCustomers = true;
+                              }),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isViewingCustomers
+                                ? Colors.green.shade700
+                                : Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
                       ),
-                    ),
-                    icon: const Icon(Icons.people, size: 20),
-                      label: Text('View Customers', 
-                          style: TextStyle(fontSize: buttonTextFontSize)),
+                      icon: const Icon(Icons.people, size: 20),
+                      label: Text(
+                        'View Customers',
+                        style: TextStyle(fontSize: buttonTextFontSize),
+                      ),
                     ),
                   ],
                 ),
@@ -120,41 +127,47 @@ class _CustomersState extends State<Customers> {
                 Row(
                   children: [
                     IconButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() {
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
                                 isAddingCustomer = true;
                                 isViewingCustomers = false;
                                 _clearForm();
                               }),
                       icon: Icon(
                         Icons.person_add,
-                        color: isAddingCustomer ? Colors.green.shade700 : Colors.green,
+                        color:
+                            isAddingCustomer
+                                ? Colors.green.shade700
+                                : Colors.green,
                       ),
                       tooltip: 'Add Customer',
                     ),
                     IconButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() {
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
                                 isAddingCustomer = false;
                                 isViewingCustomers = true;
                               }),
                       icon: Icon(
                         Icons.people,
-                        color: isViewingCustomers ? Colors.green.shade700 : Colors.green,
+                        color:
+                            isViewingCustomers
+                                ? Colors.green.shade700
+                                : Colors.green,
                       ),
                       tooltip: 'View Customers',
-                  ),
-                ],
-              ),
+                    ),
+                  ],
+                ),
             ],
           ),
           SizedBox(height: isMobile ? 12.0 : 20.0),
-          if (isAddingCustomer) 
-            Expanded(
-              child: _buildAddCustomerForm(isMobile),
-            ),
+          if (isAddingCustomer)
+            Expanded(child: _buildAddCustomerForm(isMobile)),
           if (isViewingCustomers) ...[
             Row(
               children: [
@@ -174,7 +187,9 @@ class _CustomersState extends State<Customers> {
                         horizontal: isMobile ? 12.0 : 16.0,
                       ),
                     ),
-                    onChanged: (value) => setState(() => searchQuery = value.toLowerCase()),
+                    onChanged:
+                        (value) =>
+                            setState(() => searchQuery = value.toLowerCase()),
                   ),
                 ),
                 SizedBox(width: isMobile ? 8.0 : 12.0),
@@ -188,8 +203,10 @@ class _CustomersState extends State<Customers> {
                       vertical: isMobile ? 8.0 : 10.0,
                     ),
                   ),
-                  child: Text('Refresh', 
-                    style: TextStyle(fontSize: buttonTextFontSize)),
+                  child: Text(
+                    'Refresh',
+                    style: TextStyle(fontSize: buttonTextFontSize),
+                  ),
                 ),
               ],
             ),
@@ -203,7 +220,7 @@ class _CustomersState extends State<Customers> {
 
   Widget _buildAddCustomerForm(bool isMobile) {
     final double spacing = isMobile ? 12.0 : 16.0;
-    
+
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
       child: Form(
@@ -223,7 +240,8 @@ class _CustomersState extends State<Customers> {
                 fillColor: Colors.grey.shade50,
               ),
               validator:
-                  (value) => value!.isEmpty ? 'Please enter customer name' : null,
+                  (value) =>
+                      value!.isEmpty ? 'Please enter customer name' : null,
             ),
             SizedBox(height: spacing),
             TextFormField(
@@ -344,11 +362,9 @@ class _CustomersState extends State<Customers> {
                           ),
                         )
                         : Text(
-                            'Submit', 
-                            style: TextStyle(
-                              fontSize: isMobile ? 14.0 : 16.0
-                            )
-                          ),
+                          'Submit',
+                          style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
+                        ),
               ),
             ),
             // Add padding below submit button for any device
@@ -361,106 +377,112 @@ class _CustomersState extends State<Customers> {
 
   Widget _buildCustomersList(bool isMobile) {
     return Expanded(
-            child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-                      .collection('customers')
-                      .snapshots(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-                if (snapshot.hasError) {
-                  print('Error fetching customers: ${snapshot.error}');
-                  return Center(
-                    child: Text(
-                      'Error: ${snapshot.error}\nEnsure your device has internet access.',
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  );
-                }
-                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                  return Center(
-                    child: Text(
-                      'No customers found',
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  );
-                }
+      child: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance.collection('customers').snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            print('Error fetching customers: ${snapshot.error}');
+            return Center(
+              child: Text(
+                'Error: ${snapshot.error}\nEnsure your device has internet access.',
+                style: const TextStyle(color: Colors.red),
+              ),
+            );
+          }
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return Center(
+              child: Text(
+                'No customers found',
+                style: TextStyle(color: Colors.grey.shade600),
+              ),
+            );
+          }
 
-          final customers = snapshot.data!.docs.where((doc) {
-                      final data = doc.data() as Map<String, dynamic>;
-            final name = data['name_lower']?.toLowerCase() ?? data['name']?.toLowerCase() ?? '';
-                      final phone = data['phone']?.toLowerCase() ?? '';
-            return name.contains(searchQuery) || phone.contains(searchQuery);
-                    }).toList();
+          final customers =
+              snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final name =
+                    data['name_lower']?.toLowerCase() ??
+                    data['name']?.toLowerCase() ??
+                    '';
+                final phone = data['phone']?.toLowerCase() ?? '';
+                return name.contains(searchQuery) ||
+                    phone.contains(searchQuery);
+              }).toList();
 
-                return ListView.builder(
-                  itemCount: customers.length,
-                  itemBuilder: (context, index) {
-                    final customer = customers[index];
-                    final data = customer.data() as Map<String, dynamic>;
-                    final balance = data['balance'] is num ? (data['balance'] as num).toDouble() : 0.0;
-                    
-                    return Card(
+          return ListView.builder(
+            itemCount: customers.length,
+            itemBuilder: (context, index) {
+              final customer = customers[index];
+              final data = customer.data() as Map<String, dynamic>;
+              final balance =
+                  data['balance'] is num
+                      ? (data['balance'] as num).toDouble()
+                      : 0.0;
+
+              return Card(
                 margin: EdgeInsets.symmetric(vertical: isMobile ? 4.0 : 8.0),
-                      elevation: 2,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: ListTile(
+                elevation: 2,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: ListTile(
                   contentPadding: EdgeInsets.symmetric(
                     vertical: isMobile ? 8.0 : 16.0,
                     horizontal: isMobile ? 12.0 : 16.0,
                   ),
-                        title: Text(
-                          data['name'],
+                  title: Text(
+                    data['name'],
                     style: TextStyle(
                       fontSize: isMobile ? 16.0 : 20.0,
-                            fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  subtitle: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            'Balance: ',
+                            style: TextStyle(
+                              fontSize: isMobile ? 12.0 : 14.0,
+                              color: Colors.black,
+                            ),
                           ),
-                        ),
-                        subtitle: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            SizedBox(height: 4),
-                            Row(
-                              children: [
-                                Text(
-                                  'Balance: ',
-                                  style: TextStyle(
-                                    fontSize: isMobile ? 12.0 : 14.0,
-                                    color: Colors.black,
-                                  ),
-                                ),
-                                Text(
-                                  'Rs. ${balance.toStringAsFixed(2)}',
-                                  style: TextStyle(
-                                    fontSize: isMobile ? 12.0 : 14.0,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.red,
-                                  ),
-                                ),
-                              ],
+                          Text(
+                            'Rs. ${balance.toStringAsFixed(2)}',
+                            style: TextStyle(
+                              fontSize: isMobile ? 12.0 : 14.0,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.red,
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  trailing: ElevatedButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  CustomerDetailsPage(customerId: customer.id),
                         ),
-                        trailing: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                          builder: (context) => CustomerDetailsPage(
-                                      customerId: customer.id,
-                                    ),
-                              ),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                            ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       padding: EdgeInsets.symmetric(
                         horizontal: isMobile ? 8.0 : 12.0,
                         vertical: isMobile ? 4.0 : 8.0,
@@ -468,16 +490,14 @@ class _CustomersState extends State<Customers> {
                     ),
                     child: Text(
                       'View',
-                      style: TextStyle(
-                        fontSize: isMobile ? 12.0 : 14.0,
-                      ),
+                      style: TextStyle(fontSize: isMobile ? 12.0 : 14.0),
                     ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -568,14 +588,12 @@ class CustomerDetailsPage extends StatelessWidget {
     final double avatarRadius = isMobile ? 24.0 : 30.0;
     final double spacing = isMobile ? 12.0 : 16.0;
     final double dividerHeight = isMobile ? 16.0 : 24.0;
-    
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
           'Customer Details',
-          style: TextStyle(
-            fontSize: isMobile ? 18.0 : 20.0,
-          ),
+          style: TextStyle(fontSize: isMobile ? 18.0 : 20.0),
         ),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
@@ -627,17 +645,21 @@ class CustomerDetailsPage extends StatelessWidget {
                 Color balanceColor =
                     displayBalance >= 0 ? Colors.green : Colors.red;
 
-                if (snapshot.hasData &&
-                    snapshot.data!.docs.isNotEmpty) {
+                if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
                   // Sort transactions to find the latest one
                   final transactions = snapshot.data!.docs;
                   transactions.sort((a, b) {
-                    final aDate = (a.data() as Map<String, dynamic>)['date'] as Timestamp;
-                    final bDate = (b.data() as Map<String, dynamic>)['date'] as Timestamp;
-                    return bDate.compareTo(aDate); // Descending order (newest first)
+                    final aDate =
+                        (a.data() as Map<String, dynamic>)['date'] as Timestamp;
+                    final bDate =
+                        (b.data() as Map<String, dynamic>)['date'] as Timestamp;
+                    return bDate.compareTo(
+                      aDate,
+                    ); // Descending order (newest first)
                   });
-                  
-                  final latestTransaction = transactions.first.data() as Map<String, dynamic>;
+
+                  final latestTransaction =
+                      transactions.first.data() as Map<String, dynamic>;
                   displayBalance =
                       latestTransaction['new_balance']?.toDouble() ??
                       displayBalance;
@@ -753,14 +775,15 @@ class CustomerDetailsPage extends StatelessWidget {
                               child: CircularProgressIndicator(),
                             );
                           }
-                          
+
                           // Handle Firestore index error
                           if (snapshot.hasError) {
                             final error = snapshot.error.toString();
                             print('Error fetching transactions: $error');
-                            
+
                             // Check if it's an index error
-                            if (error.contains('failed-precondition') && error.contains('index')) {
+                            if (error.contains('failed-precondition') &&
+                                error.contains('index')) {
                               return Center(
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
@@ -792,7 +815,7 @@ class CustomerDetailsPage extends StatelessWidget {
                                 ),
                               );
                             }
-                            
+
                             return Center(
                               child: Text(
                                 'Error loading transactions.\nPlease check your internet connection.',
@@ -801,7 +824,7 @@ class CustomerDetailsPage extends StatelessWidget {
                               ),
                             );
                           }
-                          
+
                           if (!snapshot.hasData ||
                               snapshot.data!.docs.isEmpty) {
                             return const Center(
@@ -826,9 +849,15 @@ class CustomerDetailsPage extends StatelessWidget {
                           // Sort transactions by date in the app instead of in the query
                           final transactions = snapshot.data!.docs;
                           transactions.sort((a, b) {
-                            final aDate = (a.data() as Map<String, dynamic>)['date'] as Timestamp;
-                            final bDate = (b.data() as Map<String, dynamic>)['date'] as Timestamp;
-                            return bDate.compareTo(aDate); // Descending order (newest first)
+                            final aDate =
+                                (a.data() as Map<String, dynamic>)['date']
+                                    as Timestamp;
+                            final bDate =
+                                (b.data() as Map<String, dynamic>)['date']
+                                    as Timestamp;
+                            return bDate.compareTo(
+                              aDate,
+                            ); // Descending order (newest first)
                           });
 
                           return ListView.builder(
@@ -841,14 +870,14 @@ class CustomerDetailsPage extends StatelessWidget {
                                   (transaction['date'] as Timestamp).toDate();
                               return Card(
                                 margin: EdgeInsets.symmetric(
-                                  vertical: isMobile ? 4.0 : 8.0
+                                  vertical: isMobile ? 4.0 : 8.0,
                                 ),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
                                 child: ListTile(
                                   contentPadding: EdgeInsets.all(
-                                    isMobile ? 12.0 : 16.0
+                                    isMobile ? 12.0 : 16.0,
                                   ),
                                   title: Text(
                                     'Date: ${DateFormat('dd/MM/yyyy').format(date)}',
@@ -879,9 +908,10 @@ class CustomerDetailsPage extends StatelessWidget {
                                         style: TextStyle(
                                           fontSize: isMobile ? 12.0 : 14.0,
                                           fontWeight: FontWeight.bold,
-                                          color: transaction['new_balance'] >= 0 
-                                            ? Colors.green 
-                                            : Colors.red,
+                                          color:
+                                              transaction['new_balance'] >= 0
+                                                  ? Colors.green
+                                                  : Colors.red,
                                         ),
                                       ),
                                     ],
@@ -919,15 +949,15 @@ class CustomerDetailsPage extends StatelessWidget {
           Text(
             '$label: ',
             style: TextStyle(
-              fontWeight: FontWeight.bold, 
-              fontSize: isMobile ? 14.0 : 16.0
+              fontWeight: FontWeight.bold,
+              fontSize: isMobile ? 14.0 : 16.0,
             ),
           ),
           Text(
             value,
             style: TextStyle(
-              fontSize: isMobile ? 14.0 : 16.0, 
-              color: valueColor ?? Colors.black
+              fontSize: isMobile ? 14.0 : 16.0,
+              color: valueColor ?? Colors.black,
             ),
           ),
         ],
