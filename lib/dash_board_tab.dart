@@ -15,9 +15,11 @@ class Dashboard extends StatefulWidget {
 class _DashboardState extends State<Dashboard> {
   DateTime selectedDate = DateTime.now();
   bool isLoading = true;
+  bool isChartLoading = false;
   bool hasError = false;
   String errorMessage = '';
   ChartTimeFrame selectedTimeFrame = ChartTimeFrame.daily;
+  bool showAmountView = true;
 
   // Data values
   double totalCredits = 0;
@@ -63,12 +65,6 @@ class _DashboardState extends State<Dashboard> {
       });
       // Always fetch new data when date changes
       await _fetchDashboardData();
-
-      // Force chart to update with new date range
-      final List<MonthlyData> chartData = await _fetchChartData();
-      setState(() {
-        monthlyData = chartData;
-      });
     }
   }
 
@@ -95,10 +91,22 @@ class _DashboardState extends State<Dashboard> {
       );
 
       final transactionsQuery =
-          FirebaseFirestore.instance.collection('transactions').get();
+          FirebaseFirestore.instance.collection('transactions')
+            .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+            .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+            .limit(100)
+            .get();
+            
       final customersQuery =
-          FirebaseFirestore.instance.collection('customers').get();
-      final salesQuery = FirebaseFirestore.instance.collection('sales').get();
+          FirebaseFirestore.instance.collection('customers')
+            .limit(100)
+            .get();
+            
+      final salesQuery = FirebaseFirestore.instance.collection('sales')
+            .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+            .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+            .limit(100)
+            .get();
 
       final results = await Future.wait([
         transactionsQuery,
@@ -116,38 +124,27 @@ class _DashboardState extends State<Dashboard> {
 
       for (var doc in transactionsSnapshot.docs) {
         final data = doc.data();
+        final amountTaken =
+            data['amount_taken'] is num
+                ? (data['amount_taken'] as num).toDouble()
+                : 0.0;
+        final amountPaid =
+            data['amount_paid'] is num
+                ? (data['amount_paid'] as num).toDouble()
+                : 0.0;
+        final customerName = data['customer_name'] ?? 'Unknown';
         final transactionDate = data['date'] as Timestamp?;
 
-        if (transactionDate != null) {
-          final transactionDateTime = transactionDate.toDate();
-          if (transactionDateTime.isAfter(
-                startOfDay.subtract(const Duration(minutes: 1)),
-              ) &&
-              transactionDateTime.isBefore(
-                endOfDay.add(const Duration(minutes: 1)),
-              )) {
-            final amountTaken =
-                data['amount_taken'] is num
-                    ? (data['amount_taken'] as num).toDouble()
-                    : 0.0;
-            final amountPaid =
-                data['amount_paid'] is num
-                    ? (data['amount_paid'] as num).toDouble()
-                    : 0.0;
-            final customerName = data['customer_name'] ?? 'Unknown';
+        filteredTransactions.add({
+          'id': doc.id,
+          'customer_name': customerName,
+          'amount_taken': amountTaken,
+          'amount_paid': amountPaid,
+          'date': transactionDate?.toDate() ?? DateTime.now(),
+        });
 
-            filteredTransactions.add({
-              'id': doc.id,
-              'customer_name': customerName,
-              'amount_taken': amountTaken,
-              'amount_paid': amountPaid,
-              'date': transactionDateTime,
-            });
-
-            dailyCredits += amountTaken;
-            dailyRecovery += amountPaid;
-          }
-        }
+        dailyCredits += amountTaken;
+        dailyRecovery += amountPaid;
       }
 
       double totalReceivable = 0;
@@ -165,39 +162,27 @@ class _DashboardState extends State<Dashboard> {
 
       for (var doc in salesSnapshot.docs) {
         final data = doc.data();
-        final saleDate = data['date'] as Timestamp?;
+        final petrolLitres =
+            data['petrol_litres'] is num
+                ? (data['petrol_litres'] as num).toDouble()
+                : 0.0;
+        final petrolRupees =
+            data['petrol_rupees'] is num
+                ? (data['petrol_rupees'] as num).toDouble()
+                : 0.0;
+        final dieselLitres =
+            data['diesel_litres'] is num
+                ? (data['diesel_litres'] as num).toDouble()
+                : 0.0;
+        final dieselRupees =
+            data['diesel_rupees'] is num
+                ? (data['diesel_rupees'] as num).toDouble()
+                : 0.0;
 
-        if (saleDate != null) {
-          final saleDateTimeUTC = saleDate.toDate();
-          if (saleDateTimeUTC.isAfter(
-                startOfDay.subtract(const Duration(minutes: 1)),
-              ) &&
-              saleDateTimeUTC.isBefore(
-                endOfDay.add(const Duration(minutes: 1)),
-              )) {
-            final petrolLitres =
-                data['petrol_litres'] is num
-                    ? (data['petrol_litres'] as num).toDouble()
-                    : 0.0;
-            final petrolRupees =
-                data['petrol_rupees'] is num
-                    ? (data['petrol_rupees'] as num).toDouble()
-                    : 0.0;
-            final dieselLitres =
-                data['diesel_litres'] is num
-                    ? (data['diesel_litres'] as num).toDouble()
-                    : 0.0;
-            final dieselRupees =
-                data['diesel_rupees'] is num
-                    ? (data['diesel_rupees'] as num).toDouble()
-                    : 0.0;
-
-            dailyPetrolLitres += petrolLitres;
-            dailyPetrolRupees += petrolRupees;
-            dailyDieselLitres += dieselLitres;
-            dailyDieselRupees += dieselRupees;
-          }
-        }
+        dailyPetrolLitres += petrolLitres;
+        dailyPetrolRupees += petrolRupees;
+        dailyDieselLitres += dieselLitres;
+        dailyDieselRupees += dieselRupees;
       }
 
       final List<MonthlyData> chartData = await _fetchChartData();
@@ -227,240 +212,343 @@ class _DashboardState extends State<Dashboard> {
     List<MonthlyData> result = [];
 
     try {
-      final allSalesSnapshot =
-          await FirebaseFirestore.instance.collection('sales').get();
-
+      // Get current date/time values to use as reference points
+      final now = DateTime.now();
+      final currentYear = now.year;
+      final currentMonth = now.month;
+      
       switch (selectedTimeFrame) {
         case ChartTimeFrame.daily:
-          for (int i = -3; i <= 2; i++) {
-            final day = selectedDate.add(Duration(days: i));
-            final startOfDay = DateTime(day.year, day.month, day.day);
-            final endOfDay = DateTime(day.year, day.month, day.day, 23, 59, 59);
-
-            double dailyPetrolLitres = 0;
-            double dailyDieselLitres = 0;
-
-            for (var doc in allSalesSnapshot.docs) {
-              final data = doc.data();
-              final saleDate = data['date'] as Timestamp?;
-
-              if (saleDate != null) {
-                final saleDateTimeUTC = saleDate.toDate();
-                if (saleDateTimeUTC.isAfter(startOfDay) &&
-                    saleDateTimeUTC.isBefore(endOfDay)) {
-                  final petrolLitres =
-                      data['petrol_litres'] is num
-                          ? (data['petrol_litres'] as num).toDouble()
-                          : 0.0;
-                  final dieselLitres =
-                      data['diesel_litres'] is num
-                          ? (data['diesel_litres'] as num).toDouble()
-                          : 0.0;
-
-                  dailyPetrolLitres += petrolLitres;
-                  dailyDieselLitres += dieselLitres;
+          // For daily view: show current day with 3 days before and 1 day after
+          final dayLabels = [
+            DateFormat('dd MMM').format(DateTime(now.year, now.month, now.day - 3)),
+            DateFormat('dd MMM').format(DateTime(now.year, now.month, now.day - 2)),
+            DateFormat('dd MMM').format(DateTime(now.year, now.month, now.day - 1)),
+            DateFormat('dd MMM').format(now),
+            DateFormat('dd MMM').format(DateTime(now.year, now.month, now.day + 1)),
+          ];
+          
+          // Calculate date range for query (4 days before to 2 days after to include partial days)
+          final startOfRange = DateTime(now.year, now.month, now.day - 4);
+          final endOfRange = DateTime(now.year, now.month, now.day + 2, 23, 59, 59);
+          
+          // Use server-side filtering and limit
+          final allSalesSnapshot = await FirebaseFirestore.instance
+              .collection('sales')
+              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+              .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+              .orderBy('date')
+              .limit(200)
+              .get();
+              
+          // Create a map with data aggregated by day
+          Map<String, MonthlyData> dailyData = {};
+          
+          // Initialize map with the 5 days we want to display
+          for (int i = -3; i <= 1; i++) {
+            final day = DateTime(now.year, now.month, now.day + i);
+            final dayKey = '${day.year}-${day.month}-${day.day}';
+            
+            dailyData[dayKey] = MonthlyData(
+              year: day.year,
+              month: day.month,
+              day: day.day,
+              petrolLitres: 0,
+              dieselLitres: 0,
+              label: dayLabels[i + 3],
+            );
+          }
+          
+          // Fill in actual data
+          for (var doc in allSalesSnapshot.docs) {
+            final data = doc.data();
+            final saleDate = data['date'] as Timestamp?;
+            
+            if (saleDate != null) {
+              final saleDateTimeUTC = saleDate.toDate();
+              // Only process data for the 5 days we care about
+              if (saleDateTimeUTC.day >= now.day - 3 && 
+                  saleDateTimeUTC.day <= now.day + 1 &&
+                  saleDateTimeUTC.month == now.month &&
+                  saleDateTimeUTC.year == now.year) {
+                
+                final dayKey = '${saleDateTimeUTC.year}-${saleDateTimeUTC.month}-${saleDateTimeUTC.day}';
+                
+                final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+                final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+                
+                if (dailyData.containsKey(dayKey)) {
+                  dailyData[dayKey]!.petrolLitres += petrolLitres;
+                  dailyData[dayKey]!.dieselLitres += dieselLitres;
                 }
               }
             }
-
-            result.add(
-              MonthlyData(
-                year: day.year,
-                month: day.month,
-                day: day.day,
-                petrolLitres: dailyPetrolLitres,
-                dieselLitres: dailyDieselLitres,
-                label: DateFormat('MMM d').format(day),
-              ),
-            );
           }
+          
+          // Convert map to sorted list
+          final sortedKeys = [
+            '${now.year}-${now.month}-${now.day - 3}',
+            '${now.year}-${now.month}-${now.day - 2}',
+            '${now.year}-${now.month}-${now.day - 1}',
+            '${now.year}-${now.month}-${now.day}',
+            '${now.year}-${now.month}-${now.day + 1}',
+          ];
+          
+          // Create result in the correct order
+          for (var key in sortedKeys) {
+            if (dailyData.containsKey(key)) {
+              result.add(dailyData[key]!);
+            }
+          }
+          
           break;
-
+          
         case ChartTimeFrame.weekly:
-          final selectedWeekStart = selectedDate.subtract(
-            Duration(days: selectedDate.weekday - 1),
-          );
-
-          for (int i = -3; i <= 2; i++) {
-            final weekStart = selectedWeekStart.add(Duration(days: i * 7));
+          // For weekly view: current week, 3 weeks before, 1 week after
+          // First, create formatted labels for the weeks
+          final List<String> weekLabels = [];
+          final List<DateTime> weekStarts = [];
+          
+          // Calculate week start dates
+          for (int i = -3; i <= 1; i++) {
+            // Find the start of the week (assuming week starts on Monday)
+            final targetDate = now.add(Duration(days: 7 * i));
+            final weekdayOffset = targetDate.weekday - DateTime.monday;
+            final weekStart = targetDate.subtract(Duration(days: weekdayOffset));
+            weekStarts.add(weekStart);
+            
+            // Create label like "20-26 Jun"
             final weekEnd = weekStart.add(const Duration(days: 6));
-
-            double weeklyPetrolLitres = 0;
-            double weeklyDieselLitres = 0;
-
-            for (var doc in allSalesSnapshot.docs) {
-              final data = doc.data();
-              final saleDate = data['date'] as Timestamp?;
-
-              if (saleDate != null) {
-                final saleDateTime = saleDate.toDate();
-                if (saleDateTime.isAfter(
-                      weekStart.subtract(const Duration(hours: 1)),
-                    ) &&
-                    saleDateTime.isBefore(
-                      weekEnd.add(const Duration(hours: 23)),
-                    )) {
-                  final petrolLitres =
-                      data['petrol_litres'] is num
-                          ? (data['petrol_litres'] as num).toDouble()
-                          : 0.0;
-                  final dieselLitres =
-                      data['diesel_litres'] is num
-                          ? (data['diesel_litres'] as num).toDouble()
-                          : 0.0;
-
-                  weeklyPetrolLitres += petrolLitres;
-                  weeklyDieselLitres += dieselLitres;
+            weekLabels.add('${DateFormat('dd').format(weekStart)}-${DateFormat('dd MMM').format(weekEnd)}');
+          }
+          
+          // Calculate date range for query (add buffer days to include partial weeks)
+          final startOfRange = weekStarts.first.subtract(const Duration(days: 1));
+          final endOfRange = weekStarts.last.add(const Duration(days: 8));
+          
+          final allSalesSnapshot = await FirebaseFirestore.instance
+              .collection('sales')
+              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+              .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+              .orderBy('date')
+              .limit(500)
+              .get();
+              
+          // Initialize weekly data with the 5 weeks we want to display
+          final Map<int, MonthlyData> weeklyData = {};
+          
+          for (int i = 0; i < 5; i++) {
+            final weekStart = weekStarts[i];
+            weeklyData[i] = MonthlyData(
+              year: weekStart.year,
+              month: weekStart.month,
+              day: weekStart.day,
+              petrolLitres: 0,
+              dieselLitres: 0,
+              label: weekLabels[i],
+            );
+          }
+          
+          // Process sales data and aggregate by week
+          for (var doc in allSalesSnapshot.docs) {
+            final data = doc.data();
+            final saleDate = data['date'] as Timestamp?;
+            
+            if (saleDate != null) {
+              final saleDateTimeUTC = saleDate.toDate();
+              
+              // Find which week this date belongs to
+              for (int i = 0; i < weekStarts.length; i++) {
+                final weekStart = weekStarts[i];
+                final weekEnd = weekStart.add(const Duration(days: 6));
+                
+                if (saleDateTimeUTC.isAfter(weekStart.subtract(const Duration(seconds: 1))) && 
+                    saleDateTimeUTC.isBefore(weekEnd.add(const Duration(days: 1)))) {
+                  
+                  final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+                  final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+                  
+                  weeklyData[i]!.petrolLitres += petrolLitres;
+                  weeklyData[i]!.dieselLitres += dieselLitres;
+                  break;
                 }
               }
             }
-
-            result.add(
-              MonthlyData(
-                year: weekStart.year,
-                month: weekStart.month,
-                day: weekStart.day,
-                petrolLitres: weeklyPetrolLitres,
-                dieselLitres: weeklyDieselLitres,
-                label:
-                    i == 0
-                        ? 'This Week'
-                        : '${DateFormat('MMM d').format(weekStart)}-${DateFormat('d').format(weekEnd)}',
-              ),
-            );
           }
+          
+          // Create result in the correct order
+          for (int i = 0; i < 5; i++) {
+            if (weeklyData.containsKey(i)) {
+              result.add(weeklyData[i]!);
+            }
+          }
+          
           break;
-
+          
         case ChartTimeFrame.monthly:
-          final currentYear = selectedDate.year;
-          final currentMonth = selectedDate.month;
-
-          for (int i = -3; i <= 2; i++) {
-            int monthOffset = currentMonth + i;
-            int year = currentYear;
-            int month = monthOffset;
-
-            if (monthOffset <= 0) {
-              year = currentYear - 1;
-              month = 12 + monthOffset;
-            } else if (monthOffset > 12) {
-              year = currentYear + 1;
-              month = monthOffset - 12;
+          // For monthly view: current month, 3 months before, 1 month after
+          final List<DateTime> monthStarts = [];
+          final List<String> monthLabels = [];
+          
+          // Calculate month start dates and labels
+          for (int i = -3; i <= 1; i++) {
+            int targetMonth = currentMonth + i;
+            int targetYear = currentYear;
+            
+            // Handle year boundary
+            if (targetMonth < 1) {
+              targetMonth += 12;
+              targetYear -= 1;
+            } else if (targetMonth > 12) {
+              targetMonth -= 12;
+              targetYear += 1;
             }
-
-            final startOfMonth = DateTime(year, month, 1);
-            final endOfMonth =
-                month < 12
-                    ? DateTime(
-                      year,
-                      month + 1,
-                      1,
-                    ).subtract(const Duration(seconds: 1))
-                    : DateTime(
-                      year + 1,
-                      1,
-                      1,
-                    ).subtract(const Duration(seconds: 1));
-
-            double monthlyPetrolLitres = 0;
-            double monthlyDieselLitres = 0;
-
-            for (var doc in allSalesSnapshot.docs) {
-              final data = doc.data();
-              final saleDate = data['date'] as Timestamp?;
-
-              if (saleDate != null) {
-                final saleDateTime = saleDate.toDate();
-                if (saleDateTime.isAfter(
-                      startOfMonth.subtract(const Duration(minutes: 1)),
-                    ) &&
-                    saleDateTime.isBefore(
-                      endOfMonth.add(const Duration(minutes: 1)),
-                    )) {
-                  final petrolLitres =
-                      data['petrol_litres'] is num
-                          ? (data['petrol_litres'] as num).toDouble()
-                          : 0.0;
-                  final dieselLitres =
-                      data['diesel_litres'] is num
-                          ? (data['diesel_litres'] as num).toDouble()
-                          : 0.0;
-
-                  monthlyPetrolLitres += petrolLitres;
-                  monthlyDieselLitres += dieselLitres;
+            
+            final monthStart = DateTime(targetYear, targetMonth, 1);
+            monthStarts.add(monthStart);
+            monthLabels.add(DateFormat('MMM yy').format(monthStart));
+          }
+          
+          // Calculate date range for query
+          final startOfRange = monthStarts.first;
+          final endOfRange = DateTime(
+            monthStarts.last.year, 
+            monthStarts.last.month + 1, 
+            0, 
+            23, 59, 59
+          ); // Last day of the last month
+          
+          final allSalesSnapshot = await FirebaseFirestore.instance
+              .collection('sales')
+              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+              .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+              .orderBy('date')
+              .limit(1000)
+              .get();
+              
+          // Initialize monthly data with the 5 months we want to display
+          final Map<int, MonthlyData> monthlyDataMap = {};
+          
+          for (int i = 0; i < 5; i++) {
+            final monthStart = monthStarts[i];
+            monthlyDataMap[i] = MonthlyData(
+              year: monthStart.year,
+              month: monthStart.month,
+              day: 1,
+              petrolLitres: 0,
+              dieselLitres: 0,
+              label: monthLabels[i],
+            );
+          }
+          
+          // Process sales data and aggregate by month
+          for (var doc in allSalesSnapshot.docs) {
+            final data = doc.data();
+            final saleDate = data['date'] as Timestamp?;
+            
+            if (saleDate != null) {
+              final saleDateTimeUTC = saleDate.toDate();
+              
+              // Find which month this date belongs to
+              for (int i = 0; i < monthStarts.length; i++) {
+                final monthStart = monthStarts[i];
+                final monthEnd = (i < monthStarts.length - 1) 
+                    ? monthStarts[i + 1].subtract(const Duration(seconds: 1))
+                    : DateTime(monthStart.year, monthStart.month + 1, 0, 23, 59, 59);
+                
+                if (saleDateTimeUTC.isAfter(monthStart.subtract(const Duration(seconds: 1))) && 
+                    saleDateTimeUTC.isBefore(monthEnd.add(const Duration(seconds: 1)))) {
+                  
+                  final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+                  final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+                  
+                  monthlyDataMap[i]!.petrolLitres += petrolLitres;
+                  monthlyDataMap[i]!.dieselLitres += dieselLitres;
+                  break;
                 }
               }
             }
-
-            String monthLabel = DateFormat('MMM yyyy').format(startOfMonth);
-            if (i == 0) {
-              monthLabel = 'Current Month';
-            }
-
-            result.add(
-              MonthlyData(
-                year: year,
-                month: month,
-                petrolLitres: monthlyPetrolLitres,
-                dieselLitres: monthlyDieselLitres,
-                label: monthLabel,
-              ),
-            );
           }
+          
+          // Create result in the correct order
+          for (int i = 0; i < 5; i++) {
+            if (monthlyDataMap.containsKey(i)) {
+              result.add(monthlyDataMap[i]!);
+            }
+          }
+          
           break;
-
+          
         case ChartTimeFrame.annual:
-          final currentYear = selectedDate.year;
-
-          for (int i = -3; i <= 2; i++) {
-            final year = currentYear + i;
-            final startOfYear = DateTime(year, 1, 1);
-            final endOfYear = DateTime(year, 12, 31, 23, 59, 59);
-
-            double yearlyPetrolLitres = 0;
-            double yearlyDieselLitres = 0;
-
-            for (var doc in allSalesSnapshot.docs) {
-              final data = doc.data();
-              final saleDate = data['date'] as Timestamp?;
-
-              if (saleDate != null) {
-                final saleDateTime = saleDate.toDate();
-                if (saleDateTime.isAfter(
-                      startOfYear.subtract(const Duration(minutes: 1)),
-                    ) &&
-                    saleDateTime.isBefore(
-                      endOfYear.add(const Duration(minutes: 1)),
-                    )) {
-                  final petrolLitres =
-                      data['petrol_litres'] is num
-                          ? (data['petrol_litres'] as num).toDouble()
-                          : 0.0;
-                  final dieselLitres =
-                      data['diesel_litres'] is num
-                          ? (data['diesel_litres'] as num).toDouble()
-                          : 0.0;
-
-                  yearlyPetrolLitres += petrolLitres;
-                  yearlyDieselLitres += dieselLitres;
+          // For annual view: current year, 3 years before, 1 year after
+          final List<int> years = [
+            currentYear - 3,
+            currentYear - 2,
+            currentYear - 1,
+            currentYear,
+            currentYear + 1,
+          ];
+          
+          // Calculate date range for query
+          final startOfRange = DateTime(years.first, 1, 1);
+          final endOfRange = DateTime(years.last, 12, 31, 23, 59, 59);
+          
+          final allSalesSnapshot = await FirebaseFirestore.instance
+              .collection('sales')
+              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+              .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+              .orderBy('date')
+              .limit(2000)
+              .get();
+              
+          // Initialize yearly data with the 5 years we want to display
+          final Map<int, MonthlyData> yearlyData = {};
+          
+          for (int i = 0; i < 5; i++) {
+            yearlyData[i] = MonthlyData(
+              year: years[i],
+              month: 1,
+              day: 1,
+              petrolLitres: 0,
+              dieselLitres: 0,
+              label: years[i].toString(),
+            );
+          }
+          
+          // Process sales data and aggregate by year
+          for (var doc in allSalesSnapshot.docs) {
+            final data = doc.data();
+            final saleDate = data['date'] as Timestamp?;
+            
+            if (saleDate != null) {
+              final saleDateTimeUTC = saleDate.toDate();
+              final year = saleDateTimeUTC.year;
+              
+              // Find which of our 5 years this date belongs to
+              for (int i = 0; i < years.length; i++) {
+                if (year == years[i]) {
+                  final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+                  final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+                  
+                  yearlyData[i]!.petrolLitres += petrolLitres;
+                  yearlyData[i]!.dieselLitres += dieselLitres;
+                  break;
                 }
               }
             }
-
-            result.add(
-              MonthlyData(
-                year: year,
-                month: 1,
-                petrolLitres: yearlyPetrolLitres,
-                dieselLitres: yearlyDieselLitres,
-                label: i == 0 ? 'This Year' : year.toString(),
-              ),
-            );
           }
+          
+          // Create result in the correct order
+          for (int i = 0; i < 5; i++) {
+            if (yearlyData.containsKey(i)) {
+              result.add(yearlyData[i]!);
+            }
+          }
+          
           break;
       }
     } catch (e) {
-      debugPrint('Error in _fetchChartData: ${e.toString().split('\n')[0]}');
+      // Error handled in the UI
     }
 
     return result;
@@ -495,43 +583,53 @@ class _DashboardState extends State<Dashboard> {
           ),
         ],
       ),
-      child: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildHeader(context, isMobile),
-            SizedBox(height: verticalSpacing),
-            if (isLoading)
-              Center(
-                child: Padding(
-                  padding: EdgeInsets.all(verticalSpacing),
-                  child: CircularProgressIndicator(
-                    color: Colors.green.shade600,
-                  ),
-                ),
-              )
-            else if (hasError)
-              Center(
-                child: Padding(
-                  padding: EdgeInsets.all(verticalSpacing),
-                  child: Text(
-                    errorMessage,
-                    style: TextStyle(
-                      color: Colors.red.shade700,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              )
-            else
-              _buildSummaryCards(context, isMobile, isTablet),
-
-            SizedBox(height: verticalSpacing),
-            _buildMonthlyChart(context, isMobile, isTablet),
-            SizedBox(height: verticalSpacing),
-          ],
-        ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Fixed header section
+          _buildHeader(context, isMobile),
+          SizedBox(height: verticalSpacing),
+          
+          // Scrollable content
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isLoading)
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(verticalSpacing),
+                        child: CircularProgressIndicator(
+                          color: Colors.green.shade600,
+                        ),
+                      ),
+                    )
+                  else if (hasError)
+                    Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(verticalSpacing),
+                        child: Text(
+                          errorMessage,
+                          style: TextStyle(
+                            color: Colors.red.shade700,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    )
+                  else
+          _buildSummaryCards(context, isMobile, isTablet),
+                  
+                  SizedBox(height: verticalSpacing),
+                  _buildMonthlyChart(context, isMobile, isTablet),
+                  SizedBox(height: verticalSpacing),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -551,31 +649,31 @@ class _DashboardState extends State<Dashboard> {
           horizontal: datePadding,
           vertical: isMobile ? 8 : 10,
         ),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.shade100,
-              spreadRadius: 1,
-              blurRadius: 4,
-            ),
-          ],
-        ),
-        child: Row(
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.shade100,
+                spreadRadius: 1,
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          child: Row(
           mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.calendar_today,
+      children: [
+              Icon(
+                Icons.calendar_today,
               size: dateIconSize,
-              color: Colors.green.shade600,
-            ),
-            const SizedBox(width: 8),
-            Text(
+                color: Colors.green.shade600,
+              ),
+              const SizedBox(width: 8),
+              Text(
               DateFormat('MMMM d, yyyy').format(selectedDate),
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: Colors.grey.shade800,
+                style: TextStyle(
+                  fontWeight: FontWeight.w500,
+                  color: Colors.grey.shade800,
                 fontSize: dateFontSize,
               ),
             ),
@@ -592,18 +690,18 @@ class _DashboardState extends State<Dashboard> {
 
     // Title widget
     final titleWidget = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-      children: [
-        Text(
-          'Dashboard',
-          style: TextStyle(
+          children: [
+            Text(
+              'Dashboard',
+              style: TextStyle(
             fontSize: titleFontSize,
-            fontWeight: FontWeight.bold,
-            color: Colors.green.shade800,
-          ),
-        ),
-        const SizedBox(height: 4),
+                fontWeight: FontWeight.bold,
+                color: Colors.green.shade800,
+              ),
+            ),
+            const SizedBox(height: 4),
         Row(
           children: [
             Text(
@@ -614,33 +712,142 @@ class _DashboardState extends State<Dashboard> {
                 fontSize: subtitleFontSize,
               ),
             ),
-            if (isMobile)
-              GestureDetector(
-                onTap: () => _selectDate(context),
-                child: Text(
-                  DateFormat('MMM d, yyyy').format(selectedDate),
-                  style: TextStyle(
-                    color: Colors.green.shade600,
-                    fontWeight: FontWeight.w500,
-                    fontSize: subtitleFontSize,
-                  ),
+            GestureDetector(
+              onTap: () => _selectDate(context),
+              child: Text(
+                DateFormat('MMM d, yyyy').format(selectedDate),
+                style: TextStyle(
+                  color: Colors.green.shade600,
+                  fontWeight: FontWeight.w500,
+                  fontSize: subtitleFontSize,
                 ),
               ),
+            ),
           ],
         ),
       ],
     );
 
-    return isMobile
-        ? Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [titleWidget, const SizedBox(height: 8), dateWidget],
-        )
-        : Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [titleWidget, dateWidget],
-        );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        isMobile
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [titleWidget, const SizedBox(height: 8), dateWidget],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [titleWidget, dateWidget],
+            ),
+        
+        // Add toggle buttons for Amount and Fuel views
+        const SizedBox(height: 16),
+        _buildViewToggleButtons(isMobile),
+      ],
+    );
+  }
+
+  // Updated method for view toggle buttons styled like Add Transaction/Add Sales
+  Widget _buildViewToggleButtons(bool isMobile) {
+    final double buttonHeight = 40.0;
+    final double buttonRadius = 8.0;
+    final double fontSize = isMobile ? 13.0 : 14.0;
+    final double gapWidth = 8.0; // Gap between buttons
+    
+    return SizedBox(
+      width: double.infinity,
+      height: buttonHeight,
+      child: Row(
+        children: [
+          Expanded(
+            child: Container(
+          decoration: BoxDecoration(
+            color: Colors.white,
+                borderRadius: BorderRadius.circular(buttonRadius),
+            boxShadow: [
+              BoxShadow(
+                    color: Colors.grey.shade200,
+                spreadRadius: 1,
+                    blurRadius: 3,
+              ),
+            ],
+          ),
+              child: GestureDetector(
+                onTap: () {
+                  if (!showAmountView) {
+                    setState(() {
+                      showAmountView = true;
+                    });
+                  }
+                },
+                child: Container(
+                  height: buttonHeight,
+                  decoration: BoxDecoration(
+                    color: showAmountView ? Colors.green : Colors.transparent,
+                    borderRadius: BorderRadius.circular(buttonRadius),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Amount',
+                style: TextStyle(
+                        color: showAmountView ? Colors.white : Colors.grey.shade700,
+                        fontWeight: FontWeight.bold,
+                        fontSize: fontSize,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: gapWidth), // Gap between buttons
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(buttonRadius),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade200,
+                    spreadRadius: 1,
+                    blurRadius: 3,
+                  ),
+                ],
+              ),
+              child: GestureDetector(
+                onTap: () {
+                  if (showAmountView) {
+                    setState(() {
+                      showAmountView = false;
+                    });
+                  }
+                },
+                child: Container(
+                  height: buttonHeight,
+                  decoration: BoxDecoration(
+                    color: !showAmountView ? Colors.green : Colors.transparent,
+                    borderRadius: BorderRadius.circular(buttonRadius),
+                  ),
+                  child: Center(
+                    child: Text(
+                      'Fuel',
+                      style: TextStyle(
+                        color: !showAmountView ? Colors.white : Colors.grey.shade700,
+                        fontWeight: FontWeight.bold,
+                        fontSize: fontSize,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ),
+        ),
+      ],
+      ),
+    );
   }
 
   Widget _buildSummaryCards(
@@ -650,93 +857,120 @@ class _DashboardState extends State<Dashboard> {
   ) {
     final double cardSpacing = isMobile ? 8.0 : 16.0;
 
+    if (showAmountView) {
     if (isMobile) {
       return Column(
-        mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
         children: [
           _buildInfoCard(
-            'Total Credits',
-            'Rs. ${NumberFormat('#,##0.00').format(totalCredits)}',
+              'Total Credits',
+              'Rs. ${NumberFormat('#,##0.00').format(totalCredits)}',
             Icons.account_balance_wallet,
-            Colors.red.shade600,
-            Colors.red.shade50,
+              Colors.red.shade600,
+              Colors.red.shade50,
             context,
             isFullWidth: true,
-            isMobile: isMobile,
-            trend: '+${_calculatePercentageChange(totalCredits)}%',
-            trendUp: true,
+              isMobile: isMobile,
+              trend: '+${_calculatePercentageChange(totalCredits)}%',
+              trendUp: true,
           ),
-          SizedBox(height: cardSpacing),
+            SizedBox(height: cardSpacing),
           _buildInfoCard(
-            'Total Recovery',
-            'Rs. ${NumberFormat('#,##0.00').format(totalRecovery)}',
-            Icons.payments,
-            Colors.green.shade600,
-            Colors.green.shade50,
+              'Total Recovery',
+              'Rs. ${NumberFormat('#,##0.00').format(totalRecovery)}',
+              Icons.payments,
+              Colors.green.shade600,
+              Colors.green.shade50,
             context,
             isFullWidth: true,
-            isMobile: isMobile,
-            trend: '+${_calculatePercentageChange(totalRecovery)}%',
-            trendUp: true,
+              isMobile: isMobile,
+              trend: '+${_calculatePercentageChange(totalRecovery)}%',
+              trendUp: true,
           ),
-          SizedBox(height: cardSpacing),
+            SizedBox(height: cardSpacing),
           _buildInfoCard(
-            'Receivable Amount',
-            'Rs. ${NumberFormat('#,##0.00').format(receivableAmount)}',
+              'Receivable Amount',
+              'Rs. ${NumberFormat('#,##0.00').format(receivableAmount)}',
             Icons.monetization_on,
             Colors.orange.shade600,
             Colors.orange.shade50,
             context,
             isFullWidth: true,
-            isMobile: isMobile,
-            trend:
-                totalCredits > totalRecovery
-                    ? '+${_calculatePercentageChange(receivableAmount)}%'
-                    : '-${_calculatePercentageChange(receivableAmount)}%',
-            trendUp: totalCredits > totalRecovery,
-          ),
-          SizedBox(height: cardSpacing),
-          _buildFuelCard(
-            'Petrol',
-            '${NumberFormat('#,##0.00').format(petrolLitres)} L',
-            'Rs. ${NumberFormat('#,##0.00').format(petrolRupees)}',
-            Icons.local_gas_station,
-            Colors.orange.shade700,
-            Colors.orange.shade50,
-            context,
-            isFullWidth: true,
-            isMobile: isMobile,
-          ),
-          SizedBox(height: cardSpacing),
-          _buildFuelCard(
-            'Diesel',
-            '${NumberFormat('#,##0.00').format(dieselLitres)} L',
-            'Rs. ${NumberFormat('#,##0.00').format(dieselRupees)}',
-            Icons.local_gas_station,
-            Colors.blue.shade700,
-            Colors.blue.shade50,
-            context,
-            isFullWidth: true,
-            isMobile: isMobile,
-          ),
-          SizedBox(height: cardSpacing),
-          _buildTotalFuelCard(
-            'Total Fuel',
-            '${NumberFormat('#,##0.00').format(petrolLitres + dieselLitres)} L',
-            'Rs. ${NumberFormat('#,##0.00').format(petrolRupees + dieselRupees)}',
-            Icons.local_gas_station,
-            Colors.green.shade700,
-            Colors.green.shade50,
-            context,
-            isMobile: isMobile,
+              isMobile: isMobile,
+              trend:
+                  totalCredits > totalRecovery
+                      ? '+${_calculatePercentageChange(receivableAmount)}%'
+                      : '-${_calculatePercentageChange(receivableAmount)}%',
+              trendUp: totalCredits > totalRecovery,
           ),
         ],
       );
     }
     if (isTablet) {
       return Column(
-        mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min,
         children: [
+          Row(
+              mainAxisSize: MainAxisSize.min,
+            children: [
+                Flexible(
+                  child: _buildInfoCard(
+                    'Total Credits',
+                    'Rs. ${NumberFormat('#,##0.00').format(totalCredits)}',
+                Icons.account_balance_wallet,
+                    Colors.red.shade600,
+                    Colors.red.shade50,
+                    context,
+                    isMobile: isMobile,
+                    trend: '+${_calculatePercentageChange(totalCredits)}%',
+                    trendUp: true,
+                  ),
+                ),
+                SizedBox(width: cardSpacing),
+                Flexible(
+                  child: _buildInfoCard(
+                    'Total Recovery',
+                    'Rs. ${NumberFormat('#,##0.00').format(totalRecovery)}',
+                    Icons.payments,
+                Colors.green.shade600,
+                Colors.green.shade50,
+                context,
+                    isMobile: isMobile,
+                    trend: '+${_calculatePercentageChange(totalRecovery)}%',
+                    trendUp: true,
+                  ),
+              ),
+            ],
+          ),
+            SizedBox(height: cardSpacing),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: _buildInfoCard(
+                    'Receivable Amount',
+                    'Rs. ${NumberFormat('#,##0.00').format(receivableAmount)}',
+            Icons.monetization_on,
+            Colors.orange.shade600,
+            Colors.orange.shade50,
+            context,
+                    isMobile: isMobile,
+                    trend:
+                        totalCredits > totalRecovery
+                            ? '+${_calculatePercentageChange(receivableAmount)}%'
+                            : '-${_calculatePercentageChange(receivableAmount)}%',
+                    trendUp: totalCredits > totalRecovery,
+                  ),
+                ),
+              ],
+          ),
+        ],
+      );
+    }
+      // Desktop layout for amount view
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+      children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -744,7 +978,7 @@ class _DashboardState extends State<Dashboard> {
                 child: _buildInfoCard(
                   'Total Credits',
                   'Rs. ${NumberFormat('#,##0.00').format(totalCredits)}',
-                  Icons.account_balance_wallet,
+          Icons.account_balance_wallet,
                   Colors.red.shade600,
                   Colors.red.shade50,
                   context,
@@ -759,28 +993,23 @@ class _DashboardState extends State<Dashboard> {
                   'Total Recovery',
                   'Rs. ${NumberFormat('#,##0.00').format(totalRecovery)}',
                   Icons.payments,
-                  Colors.green.shade600,
-                  Colors.green.shade50,
-                  context,
+          Colors.green.shade600,
+          Colors.green.shade50,
+          context,
                   isMobile: isMobile,
                   trend: '+${_calculatePercentageChange(totalRecovery)}%',
                   trendUp: true,
                 ),
               ),
-            ],
-          ),
-          SizedBox(height: cardSpacing),
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+              SizedBox(width: cardSpacing),
               Flexible(
                 child: _buildInfoCard(
                   'Receivable Amount',
                   'Rs. ${NumberFormat('#,##0.00').format(receivableAmount)}',
-                  Icons.monetization_on,
-                  Colors.orange.shade600,
-                  Colors.orange.shade50,
-                  context,
+          Icons.monetization_on,
+          Colors.orange.shade600,
+          Colors.orange.shade50,
+          context,
                   isMobile: isMobile,
                   trend:
                       totalCredits > totalRecovery
@@ -790,8 +1019,113 @@ class _DashboardState extends State<Dashboard> {
                 ),
               ),
             ],
-          ),
-          SizedBox(height: cardSpacing),
+        ),
+      ],
+    );
+    }
+    
+    // Build fuel cards if showAmountView is false
+    else {
+      if (isMobile) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildFuelCard(
+              'Petrol',
+              '${NumberFormat('#,##0.00').format(petrolLitres)} L',
+              'Rs. ${NumberFormat('#,##0.00').format(petrolRupees)}',
+              Icons.local_gas_station,
+              Colors.orange.shade700,
+              Colors.orange.shade50,
+              context,
+              isFullWidth: true,
+              isMobile: isMobile,
+            ),
+            SizedBox(height: cardSpacing),
+            _buildFuelCard(
+              'Diesel',
+              '${NumberFormat('#,##0.00').format(dieselLitres)} L',
+              'Rs. ${NumberFormat('#,##0.00').format(dieselRupees)}',
+              Icons.local_gas_station,
+              Colors.blue.shade700,
+              Colors.blue.shade50,
+              context,
+              isFullWidth: true,
+              isMobile: isMobile,
+            ),
+            SizedBox(height: cardSpacing),
+            _buildTotalFuelCard(
+              'Total Fuel',
+              '${NumberFormat('#,##0.00').format(petrolLitres + dieselLitres)} L',
+              'Rs. ${NumberFormat('#,##0.00').format(petrolRupees + dieselRupees)}',
+              Icons.local_gas_station,
+              Colors.green.shade700,
+              Colors.green.shade50,
+              context,
+              isMobile: isMobile,
+            ),
+          ],
+        );
+      }
+      if (isTablet) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: _buildFuelCard(
+                    'Petrol',
+                    '${NumberFormat('#,##0.00').format(petrolLitres)} L',
+                    'Rs. ${NumberFormat('#,##0.00').format(petrolRupees)}',
+                    Icons.local_gas_station,
+                    Colors.orange.shade700,
+                    Colors.orange.shade50,
+                    context,
+                    isMobile: isMobile,
+                  ),
+                ),
+                SizedBox(width: cardSpacing),
+                Flexible(
+                  child: _buildFuelCard(
+                    'Diesel',
+                    '${NumberFormat('#,##0.00').format(dieselLitres)} L',
+                    'Rs. ${NumberFormat('#,##0.00').format(dieselRupees)}',
+                    Icons.local_gas_station,
+                    Colors.blue.shade700,
+                    Colors.blue.shade50,
+                    context,
+                    isMobile: isMobile,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: cardSpacing),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Flexible(
+                  child: _buildTotalFuelCard(
+                    'Total Fuel',
+                    '${NumberFormat('#,##0.00').format(petrolLitres + dieselLitres)} L',
+                    'Rs. ${NumberFormat('#,##0.00').format(petrolRupees + dieselRupees)}',
+                    Icons.local_gas_station,
+                    Colors.green.shade700,
+                    Colors.green.shade50,
+                    context,
+                    isMobile: isMobile,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      }
+      // Desktop layout for fuel view
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
           Row(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -838,105 +1172,6 @@ class _DashboardState extends State<Dashboard> {
         ],
       );
     }
-    // Desktop layout
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: _buildInfoCard(
-                'Total Credits',
-                'Rs. ${NumberFormat('#,##0.00').format(totalCredits)}',
-                Icons.account_balance_wallet,
-                Colors.red.shade600,
-                Colors.red.shade50,
-                context,
-                isMobile: isMobile,
-                trend: '+${_calculatePercentageChange(totalCredits)}%',
-                trendUp: true,
-              ),
-            ),
-            SizedBox(width: cardSpacing),
-            Flexible(
-              child: _buildInfoCard(
-                'Total Recovery',
-                'Rs. ${NumberFormat('#,##0.00').format(totalRecovery)}',
-                Icons.payments,
-                Colors.green.shade600,
-                Colors.green.shade50,
-                context,
-                isMobile: isMobile,
-                trend: '+${_calculatePercentageChange(totalRecovery)}%',
-                trendUp: true,
-              ),
-            ),
-            SizedBox(width: cardSpacing),
-            Flexible(
-              child: _buildInfoCard(
-                'Receivable Amount',
-                'Rs. ${NumberFormat('#,##0.00').format(receivableAmount)}',
-                Icons.monetization_on,
-                Colors.orange.shade600,
-                Colors.orange.shade50,
-                context,
-                isMobile: isMobile,
-                trend:
-                    totalCredits > totalRecovery
-                        ? '+${_calculatePercentageChange(receivableAmount)}%'
-                        : '-${_calculatePercentageChange(receivableAmount)}%',
-                trendUp: totalCredits > totalRecovery,
-              ),
-            ),
-          ],
-        ),
-        SizedBox(height: cardSpacing),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: _buildFuelCard(
-                'Petrol',
-                '${NumberFormat('#,##0.00').format(petrolLitres)} L',
-                'Rs. ${NumberFormat('#,##0.00').format(petrolRupees)}',
-                Icons.local_gas_station,
-                Colors.orange.shade700,
-                Colors.orange.shade50,
-                context,
-                isMobile: isMobile,
-              ),
-            ),
-            SizedBox(width: cardSpacing),
-            Flexible(
-              child: _buildFuelCard(
-                'Diesel',
-                '${NumberFormat('#,##0.00').format(dieselLitres)} L',
-                'Rs. ${NumberFormat('#,##0.00').format(dieselRupees)}',
-                Icons.local_gas_station,
-                Colors.blue.shade700,
-                Colors.blue.shade50,
-                context,
-                isMobile: isMobile,
-              ),
-            ),
-            SizedBox(width: cardSpacing),
-            Flexible(
-              child: _buildTotalFuelCard(
-                'Total Fuel',
-                '${NumberFormat('#,##0.00').format(petrolLitres + dieselLitres)} L',
-                'Rs. ${NumberFormat('#,##0.00').format(petrolRupees + dieselRupees)}',
-                Icons.local_gas_station,
-                Colors.green.shade700,
-                Colors.green.shade50,
-                context,
-                isMobile: isMobile,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 
   String _calculatePercentageChange(double value) {
@@ -963,25 +1198,25 @@ class _DashboardState extends State<Dashboard> {
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade100,
-            spreadRadius: 1,
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.shade100,
+              spreadRadius: 1,
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
               Flexible(
                 child: Text(
                   title,
@@ -990,22 +1225,22 @@ class _DashboardState extends State<Dashboard> {
                     fontWeight: FontWeight.w600,
                     fontSize: titleFontSize,
                   ),
+                  ),
                 ),
-              ),
-              Container(
+                Container(
                 padding: EdgeInsets.all(isMobile ? 8 : 10),
-                decoration: BoxDecoration(
-                  color: bgColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                  decoration: BoxDecoration(
+                    color: bgColor,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 child: Icon(icon, color: iconColor, size: iconSize / 1.5),
-              ),
-            ],
-          ),
+                ),
+              ],
+            ),
           const SizedBox(height: 12),
-          Text(
-            value,
-            style: TextStyle(
+            Text(
+              value,
+              style: TextStyle(
               fontSize: valueFontSize,
               fontWeight: FontWeight.bold,
               color: Colors.grey.shade900,
@@ -1066,8 +1301,8 @@ class _DashboardState extends State<Dashboard> {
     bool isMobile,
     bool isTablet,
   ) {
-    // Further reduce chart height on mobile
-    final double chartHeight = isMobile ? 280 : 450;
+    // Adjust chart height based on device type
+    final double chartHeight = isMobile ? 300 : isTablet ? 380 : 450;
     final double titleFontSize = isMobile ? 16.0 : 20.0;
 
     return Column(
@@ -1080,21 +1315,21 @@ class _DashboardState extends State<Dashboard> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8.0),
               child: Text(
-                'Performance Chart',
+                'Fuel Chart',
                 style: TextStyle(
                   fontSize: titleFontSize,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade800,
-                ),
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade800,
               ),
+            ),
             ),
             _buildTimeFrameFilter(isMobile),
           ],
         ),
         const SizedBox(height: 16),
-        Container(
+            Container(
           height: chartHeight,
-          decoration: BoxDecoration(
+              decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
@@ -1109,164 +1344,47 @@ class _DashboardState extends State<Dashboard> {
           child: Padding(
             padding: EdgeInsets.all(isMobile ? 8.0 : 16.0),
             child:
-                monthlyData.isEmpty
+                isChartLoading
+                    ? Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.green.shade600,
+                      ),
+                    )
+                    : monthlyData.isEmpty
                     ? Center(
                       child: Text(
                         'No data available for the chart',
                         style: TextStyle(color: Colors.grey.shade600),
                       ),
                     )
-                    : SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: SizedBox(
-                        // Reduce chart width on mobile to show fewer bars at once but with better visibility
-                        width:
-                            isMobile
-                                ? monthlyData.length *
-                                    60.0 // More compact on mobile
-                                : max(
-                                  MediaQuery.of(context).size.width * 0.85,
-                                  monthlyData.length * 80.0,
+                    : LayoutBuilder(
+                        builder: (context, constraints) {
+                          // Calculate available width for the chart
+                          final availableWidth = constraints.maxWidth;
+                          // Calculate bar width based on available space
+                          final barWidth = isMobile ? 8.0 : 18.0;
+                          final barGroupWidth = barWidth * 2 + (isMobile ? 1.0 : 2.0);
+                          final totalBarGroupsWidth = barGroupWidth * monthlyData.length;
+                          
+                          // Determine if we need horizontal scrolling
+                          final needsScrolling = totalBarGroupsWidth > availableWidth - 20;
+                          
+                          return needsScrolling
+                            ? SingleChildScrollView(
+                                scrollDirection: Axis.horizontal,
+                                child: SizedBox(
+                                  width: max(totalBarGroupsWidth + 40, availableWidth),
+                                  height: chartHeight - (isMobile ? 16 : 32),
+                                  child: _buildChart(isMobile, barWidth),
                                 ),
-                        height:
-                            chartHeight -
-                            (isMobile ? 16 : 32), // account for padding
-                        child: Padding(
-                          padding: EdgeInsets.only(
-                            right: isMobile ? 12.0 : 24.0,
-                            bottom: isMobile ? 12.0 : 24.0,
-                            top: isMobile ? 12.0 : 24.0,
-                          ),
-                          child: BarChart(
-                            BarChartData(
-                              alignment: BarChartAlignment.spaceAround,
-                              maxY: _calculateMaxY(),
-                              minY: 0,
-                              barTouchData: BarTouchData(
-                                enabled: true,
-                                touchTooltipData: BarTouchTooltipData(
-                                  tooltipBgColor: Colors.blueGrey.shade800,
-                                  getTooltipItem: (
-                                    group,
-                                    groupIndex,
-                                    rod,
-                                    rodIndex,
-                                  ) {
-                                    final data = monthlyData[group.x.toInt()];
-                                    final String period = data.label;
-                                    String value = rod.y.toStringAsFixed(2);
-                                    return BarTooltipItem(
-                                      '$period\n${rodIndex == 0 ? 'Petrol' : 'Diesel'}: $value L',
-                                      const TextStyle(color: Colors.white),
-                                    );
-                                  },
-                                ),
-                              ),
-                              titlesData: FlTitlesData(
-                                show: true,
-                                bottomTitles: SideTitles(
-                                  showTitles: true,
-                                  getTextStyles:
-                                      (value) => TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: isMobile ? 8 : 11,
-                                      ),
-                                  margin: isMobile ? 8 : 16,
-                                  getTitles: (double value) {
-                                    final index = value.toInt();
-                                    if (index >= 0 &&
-                                        index < monthlyData.length) {
-                                      // For mobile, use an even shorter label format
-                                      if (isMobile) {
-                                        // Show just the day number or abbreviation for cleaner display
-                                        final label = monthlyData[index].label;
-                                        if (index == 3) {
-                                          // Current day (i=0) is at index 3 in the chart
-                                          return 'Today';
-                                        } else if (label.length > 5) {
-                                          // Truncate longer labels
-                                          return '${label.substring(0, 4)}..';
-                                        }
-                                      }
-                                      return monthlyData[index].label;
-                                    }
-                                    return '';
-                                  },
-                                ),
-                                leftTitles: SideTitles(
-                                  showTitles: true,
-                                  getTextStyles:
-                                      (value) => TextStyle(
-                                        color: Colors.grey.shade700,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: isMobile ? 8 : 12,
-                                      ),
-                                  margin: isMobile ? 8 : 16,
-                                  reservedSize: isMobile ? 40 : 60,
-                                  interval: _getIntervalForTimeFrame(),
-                                  getTitles: (value) {
-                                    if (value == 0) return '0';
-                                    // Use shorter format on mobile
-                                    return isMobile
-                                        ? NumberFormat.compact().format(value)
-                                        : '${NumberFormat.compact().format(value)} L';
-                                  },
-                                ),
-                              ),
-                              gridData: FlGridData(
-                                show:
-                                    !isMobile, // Hide grid on mobile for cleaner look
-                                drawHorizontalLine: true,
-                                horizontalInterval: _getIntervalForTimeFrame(),
-                                getDrawingHorizontalLine:
-                                    (value) => FlLine(
-                                      color: Colors.grey.shade200,
-                                      strokeWidth: 1,
-                                    ),
-                                drawVerticalLine: false,
-                              ),
-                              borderData: FlBorderData(
-                                show: true,
-                                border: Border(
-                                  bottom: BorderSide(
-                                    color: Colors.grey.shade300,
-                                    width: 1,
-                                  ),
-                                  left: BorderSide(
-                                    color: Colors.grey.shade300,
-                                    width: 1,
-                                  ),
-                                ),
-                              ),
-                              barGroups: List.generate(monthlyData.length, (
-                                index,
-                              ) {
-                                final data = monthlyData[index];
-                                return BarChartGroupData(
-                                  x: index,
-                                  barRods: [
-                                    BarChartRodData(
-                                      y: data.petrolLitres,
-                                      colors: [Colors.green.shade400],
-                                      width: isMobile ? 6 : 15,
-                                      borderRadius: BorderRadius.circular(3),
-                                    ),
-                                    BarChartRodData(
-                                      y: data.dieselLitres,
-                                      colors: [Colors.red.shade400],
-                                      width: isMobile ? 6 : 15,
-                                      borderRadius: BorderRadius.circular(3),
-                                    ),
-                                  ],
-                                  barsSpace: isMobile ? 1 : 2,
-                                );
-                              }),
-                            ),
-                          ),
-                        ),
+                              )
+                            : SizedBox(
+                                width: availableWidth,
+                                height: chartHeight - (isMobile ? 16 : 32),
+                                child: _buildChart(isMobile, barWidth),
+                              );
+                        }
                       ),
-                    ),
           ),
         ),
         // Adjust legend spacing for mobile
@@ -1280,6 +1398,138 @@ class _DashboardState extends State<Dashboard> {
           ],
         ),
       ],
+    );
+  }
+  
+  // Extracted chart building to reduce code duplication
+  Widget _buildChart(bool isMobile, double barWidth) {
+    return Padding(
+      padding: EdgeInsets.only(
+        right: isMobile ? 12.0 : 24.0,
+        bottom: isMobile ? 12.0 : 24.0,
+        top: isMobile ? 12.0 : 24.0,
+      ),
+      child: BarChart(
+        BarChartData(
+          alignment: BarChartAlignment.spaceAround,
+          maxY: _calculateMaxY(),
+          minY: 0,
+          barTouchData: BarTouchData(
+            enabled: true,
+            touchTooltipData: BarTouchTooltipData(
+              tooltipBgColor: Colors.blueGrey.shade800,
+              getTooltipItem: (
+                group,
+                groupIndex,
+                rod,
+                rodIndex,
+              ) {
+                final data = monthlyData[group.x.toInt()];
+                final String period = data.label;
+                String value = rod.y.toStringAsFixed(2);
+                return BarTooltipItem(
+                  '$period\n${rodIndex == 0 ? 'Petrol' : 'Diesel'}: $value L',
+                  const TextStyle(color: Colors.white),
+                );
+              },
+            ),
+          ),
+          titlesData: FlTitlesData(
+            show: true,
+            bottomTitles: SideTitles(
+              showTitles: true,
+              getTextStyles:
+                  (value) => TextStyle(
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isMobile ? 9 : 11,
+                  ),
+              margin: isMobile ? 10 : 16,
+              getTitles: (double value) {
+                final index = value.toInt();
+                if (index >= 0 &&
+                    index < monthlyData.length) {
+                  // For mobile, use an even shorter label format
+                  if (isMobile) {
+                    // Show just the day number or abbreviation for cleaner display
+                    final label = monthlyData[index].label;
+                    if (label.length > 5) {
+                      // Truncate longer labels
+                      return '${label.substring(0, 4)}..';
+                    }
+                  }
+                  return monthlyData[index].label;
+                }
+                return '';
+              },
+              rotateAngle: isMobile ? 30 : 0, // Rotate labels on mobile for better fit
+            ),
+            leftTitles: SideTitles(
+              showTitles: true,
+              getTextStyles:
+                  (value) => TextStyle(
+                    color: Colors.grey.shade700,
+                    fontWeight: FontWeight.bold,
+                    fontSize: isMobile ? 9 : 12,
+                  ),
+              margin: isMobile ? 30 : 50,
+              reservedSize: isMobile ? 40 : 60,
+              interval: _getIntervalForTimeFrame(),
+              getTitles: (value) {
+                if (value == 0) return '0';
+                // Use shorter format on mobile
+                return isMobile
+                    ? NumberFormat.compact().format(value)
+                    : '${NumberFormat.compact().format(value)} L';
+              },
+            ),
+          ),
+          gridData: FlGridData(
+            show: !isMobile, // Hide grid on mobile for cleaner look
+            drawHorizontalLine: true,
+            horizontalInterval: _getIntervalForTimeFrame(),
+            getDrawingHorizontalLine: (value) => FlLine(
+              color: Colors.grey.shade200,
+              strokeWidth: 1,
+            ),
+            drawVerticalLine: false,
+          ),
+          borderData: FlBorderData(
+            show: true,
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey.shade300,
+                width: 1,
+              ),
+              left: BorderSide(
+                color: Colors.grey.shade300,
+                width: 1,
+              ),
+            ),
+          ),
+          barGroups: List.generate(monthlyData.length, (index) {
+            final data = monthlyData[index];
+            return BarChartGroupData(
+              x: index,
+              barRods: [
+                BarChartRodData(
+                  y: data.petrolLitres,
+                  colors: [Colors.green.shade400],
+                  width: barWidth,
+                borderRadius: BorderRadius.circular(3),
+              ),
+                BarChartRodData(
+                  y: data.dieselLitres,
+                  colors: [Colors.red.shade400],
+                  width: barWidth,
+                  borderRadius: BorderRadius.circular(3),
+            ),
+          ],
+              barsSpace: isMobile ? 1 : 2,
+            );
+          }),
+        ),
+      ),
     );
   }
 
@@ -1338,9 +1588,8 @@ class _DashboardState extends State<Dashboard> {
         if (selectedTimeFrame != timeFrame) {
           setState(() {
             selectedTimeFrame = timeFrame;
-            isLoading = true;
           });
-          _fetchDashboardData();
+          _fetchChartDataOnly();
         }
       },
       child: Container(
@@ -1434,7 +1683,7 @@ class _DashboardState extends State<Dashboard> {
     return a > b ? a : b;
   }
 
-  // New method for fuel card widget
+  // New method for fuel card widget with updated font sizes and date position
   Widget _buildFuelCard(
     String title,
     String litres,
@@ -1448,8 +1697,9 @@ class _DashboardState extends State<Dashboard> {
   }) {
     final double cardPadding = isMobile ? 12.0 : 20.0;
     final double titleFontSize = isMobile ? 14.0 : 16.0;
-    final double valueFontSize = isMobile ? 16.0 : 20.0;
+    final double valueFontSize = isMobile ? 20.0 : 26.0;
     final double secondaryFontSize = isMobile ? 14.0 : 18.0;
+    final double dateFontSize = isMobile ? 10.0 : 12.0;
     final double iconSize = isMobile ? 28.0 : 36.0;
 
     return Container(
@@ -1494,37 +1744,46 @@ class _DashboardState extends State<Dashboard> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            litres,
-            style: TextStyle(
-              fontSize: valueFontSize,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            amount,
-            style: TextStyle(
-              fontSize: secondaryFontSize,
-              fontWeight: FontWeight.w500,
-              color: iconColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            DateFormat('MMM d, yyyy').format(selectedDate),
-            style: TextStyle(
-              fontSize: isMobile ? 10 : 12,
-              color: Colors.grey.shade600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    litres,
+                    style: TextStyle(
+                      fontSize: valueFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    amount,
+                    style: TextStyle(
+                      fontSize: secondaryFontSize,
+                      fontWeight: FontWeight.w500,
+                      color: iconColor,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                DateFormat('MMM d, yyyy').format(selectedDate),
+                style: TextStyle(
+                  fontSize: dateFontSize,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  // New method for total fuel card widget
+  // New method for total fuel card widget with updated font sizes and date position
   Widget _buildTotalFuelCard(
     String title,
     String litres,
@@ -1537,8 +1796,9 @@ class _DashboardState extends State<Dashboard> {
   }) {
     final double cardPadding = isMobile ? 12.0 : 20.0;
     final double titleFontSize = isMobile ? 14.0 : 16.0;
-    final double valueFontSize = isMobile ? 16.0 : 20.0;
+    final double valueFontSize = isMobile ? 20.0 : 26.0;
     final double secondaryFontSize = isMobile ? 14.0 : 18.0;
+    final double dateFontSize = isMobile ? 10.0 : 12.0;
     final double iconSize = isMobile ? 28.0 : 36.0;
 
     return Container(
@@ -1583,34 +1843,67 @@ class _DashboardState extends State<Dashboard> {
             ],
           ),
           const SizedBox(height: 12),
-          Text(
-            litres,
-            style: TextStyle(
-              fontSize: valueFontSize,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            amount,
-            style: TextStyle(
-              fontSize: secondaryFontSize,
-              fontWeight: FontWeight.w500,
-              color: iconColor,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            DateFormat('MMM d, yyyy').format(selectedDate),
-            style: TextStyle(
-              fontSize: isMobile ? 10 : 12,
-              color: Colors.grey.shade600,
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    litres,
+                    style: TextStyle(
+                      fontSize: valueFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.grey.shade900,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    amount,
+                    style: TextStyle(
+                      fontSize: secondaryFontSize,
+                      fontWeight: FontWeight.w500,
+                      color: iconColor,
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                DateFormat('MMM d, yyyy').format(selectedDate),
+                style: TextStyle(
+                  fontSize: dateFontSize,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
+  }
+
+  // New method to only update chart data when time frame changes
+  Future<void> _fetchChartDataOnly() async {
+    try {
+      // Create a variable to track only chart loading state
+      setState(() {
+        // Only set loading state for the chart
+        isChartLoading = true;
+      });
+      
+      final List<MonthlyData> chartData = await _fetchChartData();
+      
+      setState(() {
+        monthlyData = chartData;
+        isChartLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        isChartLoading = false;
+        hasError = true;
+        errorMessage = 'Failed to load chart data: ${e.toString().split('\n')[0]}';
+      });
+    }
   }
 }
 
@@ -1618,8 +1911,8 @@ class MonthlyData {
   final int year;
   final int month;
   final int day;
-  final double petrolLitres;
-  final double dieselLitres;
+  double petrolLitres;
+  double dieselLitres;
   final String label;
 
   MonthlyData({

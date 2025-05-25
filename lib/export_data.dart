@@ -281,17 +281,25 @@ class _ExportDataState extends State<ExportData> {
       }
 
       final Future<QuerySnapshot> customersQuery =
-          FirebaseFirestore.instance.collection('customers').get();
+          FirebaseFirestore.instance.collection('customers')
+            .limit(500)
+            .get();
       final Future<QuerySnapshot> transactionsQuery =
           FirebaseFirestore.instance
               .collection('transactions')
               .orderBy('date', descending: true)
+              .limit(1000)
               .get();
       final Future<QuerySnapshot> salesQuery =
           FirebaseFirestore.instance
               .collection('sales')
               .orderBy('date', descending: true)
+              .limit(1000)
               .get();
+
+      setState(() {
+        statusMessage = 'Fetching data from database...';
+      });
 
       final results = await Future.wait([
         customersQuery,
@@ -299,105 +307,148 @@ class _ExportDataState extends State<ExportData> {
         salesQuery,
       ]);
 
+      setState(() {
+        statusMessage = 'Processing data and creating Excel file...';
+      });
+
       final customersSnapshot = results[0];
       final transactionsSnapshot = results[1];
       final salesSnapshot = results[2];
 
       int customerRow = 1;
-      for (var doc in customersSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final List<dynamic> rowData = [
-          data['name'] ?? '',
-          data['phone'] ?? '',
-          data['cnic'] ?? '',
-          data['page_number'] ?? '',
-          data['balance'] ?? 0.0,
-          data['created_at'] != null
-              ? DateFormat(
-                'dd/MM/yyyy',
-              ).format((data['created_at'] as Timestamp).toDate())
-              : 'N/A',
-        ];
+      final int batchSize = 100;
+      final int totalCustomers = customersSnapshot.docs.length;
+      
+      for (int i = 0; i < totalCustomers; i += batchSize) {
+        final int end = (i + batchSize < totalCustomers) ? i + batchSize : totalCustomers;
+        final batch = customersSnapshot.docs.sublist(i, end);
+        
+        setState(() {
+          statusMessage = 'Processing customers data (${i + 1}-$end of $totalCustomers)...';
+        });
+        
+        for (var doc in batch) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> rowData = [
+            data['name'] ?? '',
+            data['phone'] ?? '',
+            data['cnic'] ?? '',
+            data['page_number'] ?? '',
+            data['balance'] ?? 0.0,
+            data['created_at'] != null
+                ? DateFormat(
+                  'dd/MM/yyyy',
+                ).format((data['created_at'] as Timestamp).toDate())
+                : 'N/A',
+          ];
 
-        for (var i = 0; i < rowData.length; i++) {
-          final cell = customersSheet.cell(
-            excel.CellIndex.indexByColumnRow(
-              columnIndex: i,
-              rowIndex: customerRow,
-            ),
-          );
-          cell.value = excel.TextCellValue(rowData[i].toString());
+          for (var i = 0; i < rowData.length; i++) {
+            final cell = customersSheet.cell(
+              excel.CellIndex.indexByColumnRow(
+                columnIndex: i,
+                rowIndex: customerRow,
+              ),
+            );
+            cell.value = excel.TextCellValue(rowData[i].toString());
+          }
+          customerRow++;
         }
-        customerRow++;
       }
 
       int transactionRow = 1;
-      for (var doc in transactionsSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final List<dynamic> rowData = [
-          data['date'] != null
-              ? DateFormat(
-                'dd/MM/yyyy',
-              ).format((data['date'] as Timestamp).toDate())
-              : 'N/A',
-          data['customer_name'] ?? '',
-          data['phone'] ?? '',
-          data['previous_balance'] ?? 0.0,
-          data['amount_paid'] ?? 0.0,
-          data['amount_taken'] ?? 0.0,
-          data['new_balance'] ?? 0.0,
-        ];
+      final int totalTransactions = transactionsSnapshot.docs.length;
+      
+      for (int i = 0; i < totalTransactions; i += batchSize) {
+        final int end = (i + batchSize < totalTransactions) ? i + batchSize : totalTransactions;
+        final batch = transactionsSnapshot.docs.sublist(i, end);
+        
+        setState(() {
+          statusMessage = 'Processing transactions data (${i + 1}-$end of $totalTransactions)...';
+        });
+        
+        for (var doc in batch) {
+          final data = doc.data() as Map<String, dynamic>;
+          final List<dynamic> rowData = [
+            data['date'] != null
+                ? DateFormat(
+                  'dd/MM/yyyy',
+                ).format((data['date'] as Timestamp).toDate())
+                : 'N/A',
+            data['customer_name'] ?? '',
+            data['phone'] ?? '',
+            data['previous_balance'] ?? 0.0,
+            data['amount_paid'] ?? 0.0,
+            data['amount_taken'] ?? 0.0,
+            data['new_balance'] ?? 0.0,
+          ];
 
-        for (var i = 0; i < rowData.length; i++) {
-          final cell = transactionsSheet.cell(
-            excel.CellIndex.indexByColumnRow(
-              columnIndex: i,
-              rowIndex: transactionRow,
-            ),
-          );
-          cell.value = excel.TextCellValue(rowData[i].toString());
+          for (var i = 0; i < rowData.length; i++) {
+            final cell = transactionsSheet.cell(
+              excel.CellIndex.indexByColumnRow(
+                columnIndex: i,
+                rowIndex: transactionRow,
+              ),
+            );
+            cell.value = excel.TextCellValue(rowData[i].toString());
+          }
+          transactionRow++;
         }
-        transactionRow++;
       }
 
+      // Process sales in batches
       int salesRow = 1;
-      for (var doc in salesSnapshot.docs) {
-        final data = doc.data() as Map<String, dynamic>;
-        final petrolLitres =
-            data['petrol_litres'] is num
-                ? (data['petrol_litres'] as num).toDouble()
-                : 0.0;
-        final dieselLitres =
-            data['diesel_litres'] is num
-                ? (data['diesel_litres'] as num).toDouble()
-                : 0.0;
-        final totalLitres = petrolLitres + dieselLitres;
+      final int totalSales = salesSnapshot.docs.length;
+      
+      for (int i = 0; i < totalSales; i += batchSize) {
+        final int end = (i + batchSize < totalSales) ? i + batchSize : totalSales;
+        final batch = salesSnapshot.docs.sublist(i, end);
+        
+        setState(() {
+          statusMessage = 'Processing sales data (${i + 1}-$end of $totalSales)...';
+        });
+        
+        for (var doc in batch) {
+          final data = doc.data() as Map<String, dynamic>;
+          final petrolLitres =
+              data['petrol_litres'] is num
+                  ? (data['petrol_litres'] as num).toDouble()
+                  : 0.0;
+          final dieselLitres =
+              data['diesel_litres'] is num
+                  ? (data['diesel_litres'] as num).toDouble()
+                  : 0.0;
+          final totalLitres = petrolLitres + dieselLitres;
 
-        final List<dynamic> rowData = [
-          data['date'] != null
-              ? DateFormat(
-                'dd/MM/yyyy',
-              ).format((data['date'] as Timestamp).toDate())
-              : 'N/A',
-          petrolLitres,
-          data['petrol_rupees'] ?? 0.0,
-          dieselLitres,
-          data['diesel_rupees'] ?? 0.0,
-          totalLitres,
-          data['total_amount'] ?? 0.0,
-        ];
+          final List<dynamic> rowData = [
+            data['date'] != null
+                ? DateFormat(
+                  'dd/MM/yyyy',
+                ).format((data['date'] as Timestamp).toDate())
+                : 'N/A',
+            petrolLitres,
+            data['petrol_rupees'] ?? 0.0,
+            dieselLitres,
+            data['diesel_rupees'] ?? 0.0,
+            totalLitres,
+            data['total_amount'] ?? 0.0,
+          ];
 
-        for (var i = 0; i < rowData.length; i++) {
-          final cell = salesSheet.cell(
-            excel.CellIndex.indexByColumnRow(
-              columnIndex: i,
-              rowIndex: salesRow,
-            ),
-          );
-          cell.value = excel.TextCellValue(rowData[i].toString());
+          for (var i = 0; i < rowData.length; i++) {
+            final cell = salesSheet.cell(
+              excel.CellIndex.indexByColumnRow(
+                columnIndex: i,
+                rowIndex: salesRow,
+              ),
+            );
+            cell.value = excel.TextCellValue(rowData[i].toString());
+          }
+          salesRow++;
         }
-        salesRow++;
       }
+
+      setState(() {
+        statusMessage = 'Formatting Excel file...';
+      });
 
       for (var sheet in excelFile.sheets.values) {
         for (var i = 0; i < 10; i++) {

@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'home_page.dart';
+import 'auth/password_screen.dart';
+import 'auth/activity_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +15,7 @@ void main() async {
 
     FirebaseFirestore.instance.settings = const Settings(
       persistenceEnabled: true,
+      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
       host: null,
       sslEnabled: true,
     );
@@ -34,7 +37,23 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const HomePage(),
+      builder: (context, child) {
+        return GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: () {
+            if (child.runtimeType != PasswordScreen) {
+              ActivityService().resetTimer(context);
+            }
+          },
+          onPanDown: (_) {
+            if (child.runtimeType != PasswordScreen) {
+              ActivityService().resetTimer(context);
+            }
+          },
+          child: child!,
+        );
+      },
+      home: const PasswordScreen(destination: HomePage()),
     );
   }
 }

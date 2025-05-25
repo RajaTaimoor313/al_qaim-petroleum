@@ -508,7 +508,6 @@ class _CustomersState extends State<Customers> {
     if (_formKey.currentState!.validate()) {
       setState(() => _isLoading = true);
       try {
-        print('Submitting customer form...');
         final name = nameController.text.trim();
         final phone = phoneController.text.trim();
         final cnic = addressController.text.trim();
@@ -516,11 +515,8 @@ class _CustomersState extends State<Customers> {
         if (name.isEmpty || phone.isEmpty) {
           throw Exception('Name or phone cannot be empty');
         }
-        print(
-          'Adding customer: name=$name, phone=$phone, cnic=$cnic, pageNumber=$pageNumber, balance=${double.parse(balanceController.text.trim())}',
-        );
-        final docId =
-            FirebaseFirestore.instance.collection('customers').doc().id;
+        
+        final docId = FirebaseFirestore.instance.collection('customers').doc().id;
         final docRef = FirebaseFirestore.instance
             .collection('customers')
             .doc(docId);
@@ -535,8 +531,6 @@ class _CustomersState extends State<Customers> {
           'created_at': FieldValue.serverTimestamp(),
         });
 
-        final snapshot = await docRef.get();
-        print('Written data: ${snapshot.data()}');
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Customer added successfully'),
@@ -550,7 +544,6 @@ class _CustomersState extends State<Customers> {
           _isLoading = false;
         });
       } catch (e) {
-        print('Error in _submitCustomerForm: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -608,22 +601,22 @@ class CustomerDetailsPage extends StatelessWidget {
                   .collection('customers')
                   .doc(customerId)
                   .snapshots(),
-          builder: (context, customerSnapshot) {
-            if (customerSnapshot.connectionState == ConnectionState.waiting) {
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
               return const Center(child: CircularProgressIndicator());
             }
-            if (customerSnapshot.hasError) {
+            if (snapshot.hasError) {
               print(
-                'Error fetching customer details: ${customerSnapshot.error}',
+                'Error fetching customer details: ${snapshot.error}',
               );
               return Center(
                 child: Text(
-                  'Error: ${customerSnapshot.error}\nEnsure your device has internet access.',
+                  'Error: ${snapshot.error}\nEnsure your device has internet access.',
                   style: const TextStyle(color: Colors.red),
                 ),
               );
             }
-            if (!customerSnapshot.hasData || !customerSnapshot.data!.exists) {
+            if (!snapshot.hasData || !snapshot.data!.exists) {
               return const Center(
                 child: Text(
                   'Customer not found',
@@ -633,32 +626,24 @@ class CustomerDetailsPage extends StatelessWidget {
             }
 
             final customer =
-                customerSnapshot.data!.data() as Map<String, dynamic>;
+                snapshot.data!.data() as Map<String, dynamic>;
 
             return StreamBuilder<QuerySnapshot>(
               stream:
                   FirebaseFirestore.instance
                       .collection('transactions')
                       .where('customer_id', isEqualTo: customerId)
+                      .orderBy('date', descending: true)
+                      .limit(50)
                       .snapshots(),
-              builder: (context, snapshot) {
+              builder: (context, transactionSnapshot) {
                 double displayBalance = customer['balance']?.toDouble() ?? 0.0;
                 Color balanceColor =
                     displayBalance >= 0 ? Colors.green : Colors.red;
 
-                if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                  // Sort transactions to find the latest one
-                  final transactions = snapshot.data!.docs;
-                  transactions.sort((a, b) {
-                    final aDate =
-                        (a.data() as Map<String, dynamic>)['date'] as Timestamp;
-                    final bDate =
-                        (b.data() as Map<String, dynamic>)['date'] as Timestamp;
-                    return bDate.compareTo(
-                      aDate,
-                    ); // Descending order (newest first)
-                  });
-
+                if (transactionSnapshot.hasData &&
+                    transactionSnapshot.data!.docs.isNotEmpty) {
+                  final transactions = transactionSnapshot.data!.docs;
                   final latestTransaction =
                       transactions.first.data() as Map<String, dynamic>;
                   displayBalance =
@@ -763,166 +748,43 @@ class CustomerDetailsPage extends StatelessWidget {
                     ),
                     SizedBox(height: spacing),
                     Expanded(
-                      child: StreamBuilder<QuerySnapshot>(
-                        stream:
-                            FirebaseFirestore.instance
-                                .collection('transactions')
-                                .where('customer_id', isEqualTo: customerId)
-                                .snapshots(),
-                        builder: (context, snapshot) {
-                          if (snapshot.connectionState ==
-                              ConnectionState.waiting) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-
-                          // Handle Firestore index error
-                          if (snapshot.hasError) {
-                            final error = snapshot.error.toString();
-                            print('Error fetching transactions: $error');
-
-                            // Check if it's an index error
-                            if (error.contains('failed-precondition') &&
-                                error.contains('index')) {
-                              return Center(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(
-                                      Icons.error_outline,
-                                      size: 48,
-                                      color: Colors.orange,
-                                    ),
-                                    const SizedBox(height: 16),
-                                    const Text(
-                                      'No Transaction History',
-                                      style: TextStyle(
-                                        color: Colors.grey,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Add transactions for this customer to see them here.',
-                                      textAlign: TextAlign.center,
-                                      style: TextStyle(
-                                        color: Colors.grey.shade600,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            return Center(
-                              child: Text(
-                                'Error loading transactions.\nPlease check your internet connection.',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(color: Colors.red),
-                              ),
-                            );
-                          }
-
-                          if (!snapshot.hasData ||
-                              snapshot.data!.docs.isEmpty) {
-                            return const Center(
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.history,
-                                    size: 48,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'No transaction history found',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }
-
-                          // Sort transactions by date in the app instead of in the query
-                          final transactions = snapshot.data!.docs;
-                          transactions.sort((a, b) {
-                            final aDate =
-                                (a.data() as Map<String, dynamic>)['date']
-                                    as Timestamp;
-                            final bDate =
-                                (b.data() as Map<String, dynamic>)['date']
-                                    as Timestamp;
-                            return bDate.compareTo(
-                              aDate,
-                            ); // Descending order (newest first)
-                          });
-
-                          return ListView.builder(
-                            itemCount: transactions.length,
-                            itemBuilder: (context, index) {
-                              final transaction =
-                                  transactions[index].data()
-                                      as Map<String, dynamic>;
-                              final date =
-                                  (transaction['date'] as Timestamp).toDate();
-                              return Card(
-                                margin: EdgeInsets.symmetric(
-                                  vertical: isMobile ? 4.0 : 8.0,
-                                ),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
-                                child: ListTile(
-                                  contentPadding: EdgeInsets.all(
-                                    isMobile ? 12.0 : 16.0,
-                                  ),
-                                  title: Text(
-                                    'Date: ${DateFormat('dd/MM/yyyy').format(date)}',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: isMobile ? 14.0 : 16.0,
-                                    ),
-                                  ),
-                                  subtitle: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                      child: transactionSnapshot.hasData
+                          ? transactionSnapshot.data!.docs.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      SizedBox(height: isMobile ? 4.0 : 8.0),
-                                      Text(
-                                        'Amount Paid: ${transaction['amount_paid']}',
-                                        style: TextStyle(
-                                          fontSize: isMobile ? 12.0 : 14.0,
-                                        ),
+                                      const Icon(
+                                        Icons.receipt_long,
+                                        size: 48,
+                                        color: Colors.grey,
                                       ),
-                                      Text(
-                                        'Amount Taken: ${transaction['amount_taken']}',
+                                      const SizedBox(height: 16),
+                                      const Text(
+                                        'No Transaction History',
                                         style: TextStyle(
-                                          fontSize: isMobile ? 12.0 : 14.0,
-                                        ),
-                                      ),
-                                      Text(
-                                        'New Balance: ${transaction['new_balance']}',
-                                        style: TextStyle(
-                                          fontSize: isMobile ? 12.0 : 14.0,
+                                          color: Colors.grey,
+                                          fontSize: 16,
                                           fontWeight: FontWeight.bold,
-                                          color:
-                                              transaction['new_balance'] >= 0
-                                                  ? Colors.green
-                                                  : Colors.red,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        'Add transactions for this customer to see them here.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 14,
                                         ),
                                       ),
                                     ],
                                   ),
-                                ),
-                              );
-                            },
-                          );
-                        },
-                      ),
+                                )
+                              : _buildTransactionsList(
+                                  transactionSnapshot.data!.docs,
+                                  isMobile,
+                                )
+                          : const Center(child: CircularProgressIndicator()),
                     ),
                   ],
                 );
@@ -963,6 +825,78 @@ class CustomerDetailsPage extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildTransactionsList(List<DocumentSnapshot> transactions, bool isMobile) {
+    // Sort transactions by date in the app instead of in the query
+    transactions.sort((a, b) {
+      final aDate =
+          (a.data() as Map<String, dynamic>)['date'] as Timestamp;
+      final bDate =
+          (b.data() as Map<String, dynamic>)['date'] as Timestamp;
+      return bDate.compareTo(
+        aDate,
+      ); // Descending order (newest first)
+    });
+
+    return ListView.builder(
+      itemCount: transactions.length,
+      itemBuilder: (context, index) {
+        final transaction =
+            transactions[index].data() as Map<String, dynamic>;
+        final date =
+            (transaction['date'] as Timestamp).toDate();
+        return Card(
+          margin: EdgeInsets.symmetric(
+            vertical: isMobile ? 4.0 : 8.0,
+          ),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: ListTile(
+            contentPadding: EdgeInsets.all(
+              isMobile ? 12.0 : 16.0,
+            ),
+            title: Text(
+              'Date: ${DateFormat('dd/MM/yyyy').format(date)}',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: isMobile ? 14.0 : 16.0,
+              ),
+            ),
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(height: isMobile ? 4.0 : 8.0),
+                Text(
+                  'Amount Paid: ${transaction['amount_paid']}',
+                  style: TextStyle(
+                    fontSize: isMobile ? 12.0 : 14.0,
+                  ),
+                ),
+                Text(
+                  'Amount Taken: ${transaction['amount_taken']}',
+                  style: TextStyle(
+                    fontSize: isMobile ? 12.0 : 14.0,
+                  ),
+                ),
+                Text(
+                  'New Balance: ${transaction['new_balance']}',
+                  style: TextStyle(
+                    fontSize: isMobile ? 12.0 : 14.0,
+                    fontWeight: FontWeight.bold,
+                    color:
+                        transaction['new_balance'] >= 0
+                            ? Colors.green
+                            : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }
