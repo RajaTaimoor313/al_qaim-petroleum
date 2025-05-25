@@ -1,10 +1,7 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'customer_tab.dart';
 import 'dash_board_tab.dart';
 import 'data_entry_tab.dart';
-import 'test_query.dart';
 import 'export_data.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,47 +15,12 @@ class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  // Test Firestore connectivity (keeping the function but removing from AppBar)
-  void _testFirestore() async {
-    try {
-      print('Testing Firestore connectivity...');
-      await FirebaseFirestore.instance.collection('test').add({
-        'timestamp': FieldValue.serverTimestamp(),
-        'message': 'Hello from Al Qaim app',
-      });
-      print('Firestore test successful');
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Firestore test successful'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } catch (e) {
-      print('Firestore test error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Firestore test error: $e\nEnsure your device has internet access.',
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
-    }
-  }
-
   void _toggleDrawer() {
     if (_scaffoldKey.currentState!.isDrawerOpen) {
       _scaffoldKey.currentState!.closeDrawer();
     } else {
       _scaffoldKey.currentState!.openDrawer();
     }
-  }
-
-  void _openTestQuery() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (context) => const TestQuery()));
   }
 
   @override
@@ -69,36 +31,36 @@ class _HomePageState extends State<HomePage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(kToolbarHeight),
-        child: ClipRRect(
-          borderRadius: const BorderRadius.all(Radius.circular(15)),
-          child: AppBar(
-            title: const Text(
-              'AL QAIM PETROLEUM',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
+        preferredSize: const Size.fromHeight(kToolbarHeight + 10),
+        child: Container(
+          padding: const EdgeInsets.only(top: 10),
+          child: ClipRRect(
+            borderRadius: const BorderRadius.all(Radius.circular(15)),
+            child: AppBar(
+              title: const Text(
+                'AL QAIM PETROLEUM',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            // Always show the menu button in AppBar for mobile
-            leading:
-                isMobile
-                    ? IconButton(
-                      icon: const Icon(Icons.menu, color: Colors.white),
-                      onPressed: _toggleDrawer,
-                    )
-                    : null,
-            actions: [
-              // Remove debug button
-            ],
-            flexibleSpace: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.green, Colors.green],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+              centerTitle: true,
+              backgroundColor: Colors.transparent,
+              leading:
+                  isMobile
+                      ? IconButton(
+                        icon: const Icon(Icons.menu, color: Colors.white),
+                        onPressed: _toggleDrawer,
+                      )
+                      : null,
+              actions: const [],
+              flexibleSpace: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green, Colors.green],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
               ),
             ),
@@ -109,6 +71,7 @@ class _HomePageState extends State<HomePage> {
           isMobile
               ? Drawer(
                 child: Container(
+                  padding: const EdgeInsets.only(top: 10),
                   decoration: const BoxDecoration(
                     gradient: LinearGradient(
                       colors: [Colors.green, Colors.green],
@@ -122,7 +85,6 @@ class _HomePageState extends State<HomePage> {
                         automaticallyImplyLeading: true,
                         backgroundColor: Colors.transparent,
                         elevation: 0,
-                        // This adds the automatic back button
                         leading: IconButton(
                           icon: const Icon(
                             Icons.arrow_back,
@@ -160,10 +122,7 @@ class _HomePageState extends State<HomePage> {
                       ),
                       Expanded(
                         child: Container(
-                          height:
-                              mediaQuerySize.height -
-                              kToolbarHeight -
-                              8, // SafeArea height adjusting for padding
+                          height: mediaQuerySize.height - (kToolbarHeight + 18),
                           margin: const EdgeInsets.only(left: 8.0),
                           child: _buildSelectedScreen(),
                         ),
@@ -235,12 +194,7 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildPanelItem(int index, IconData icon, String title) {
     return ListTile(
-      leading: Icon(
-        icon,
-        color: Colors.white,
-        // Force a specific size to ensure visibility on web
-        size: 24,
-      ),
+      leading: Icon(icon, color: Colors.white, size: 24),
       title: Text(
         title,
         style: TextStyle(
@@ -253,7 +207,6 @@ class _HomePageState extends State<HomePage> {
       selectedColor: Colors.white,
       onTap: () {
         setState(() => _selectedIndex = index);
-        // Only close drawer, don't navigate on desktop
         if (MediaQuery.of(context).size.width < 600) {
           Navigator.pop(context);
         }
@@ -262,7 +215,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildSelectedScreen() {
-    // Use LayoutBuilder to get constraints passed to screen
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         return SizedBox(height: constraints.maxHeight, child: _getScreen());

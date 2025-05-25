@@ -7,8 +7,6 @@ import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:typed_data';
-// Import universal_html conditionally to support web file downloads
-// ignore: avoid_web_libraries_in_flutter
 import 'package:universal_html/html.dart' as html;
 
 class ExportData extends StatefulWidget {
@@ -23,7 +21,7 @@ class _ExportDataState extends State<ExportData> {
   String statusMessage = '';
   bool hasError = false;
   String exportedFilePath = '';
-  
+
   @override
   Widget build(BuildContext context) {
     final bool isMobile = MediaQuery.of(context).size.width < 600;
@@ -31,7 +29,7 @@ class _ExportDataState extends State<ExportData> {
     final double borderRadius = isMobile ? 12.0 : 15.0;
     final double titleFontSize = isMobile ? 20.0 : 24.0;
     final double buttonHeight = isMobile ? 48.0 : 56.0;
-    
+
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
@@ -50,10 +48,13 @@ class _ExportDataState extends State<ExportData> {
         children: [
           Text(
             'Export Data',
-            style: TextStyle(fontSize: titleFontSize, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: titleFontSize,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 24),
-          
+
           Card(
             elevation: 2,
             shape: RoundedRectangleBorder(
@@ -66,17 +67,12 @@ class _ExportDataState extends State<ExportData> {
                 children: [
                   const Text(
                     'Export All Data to Excel',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'This will create an Excel file containing all your stored data. The file will be saved to your Downloads folder.',
-                    style: TextStyle(
-                      color: Colors.grey,
-                    ),
+                    'This will create an Excel file containing all your Saved data. The file will be saved to your Downloads folder.',
+                    style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 20),
                   SizedBox(
@@ -91,16 +87,17 @@ class _ExportDataState extends State<ExportData> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      icon: isExporting 
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          )
-                        : const Icon(Icons.download),
+                      icon:
+                          isExporting
+                              ? SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                              : const Icon(Icons.download),
                       label: Text(
                         isExporting ? 'Exporting...' : 'Export to Excel',
                         style: TextStyle(
@@ -114,7 +111,7 @@ class _ExportDataState extends State<ExportData> {
               ),
             ),
           ),
-          
+
           if (statusMessage.isNotEmpty) ...[
             const SizedBox(height: 24),
             Container(
@@ -137,7 +134,10 @@ class _ExportDataState extends State<ExportData> {
                     child: Text(
                       statusMessage,
                       style: TextStyle(
-                        color: hasError ? Colors.red.shade700 : Colors.green.shade700,
+                        color:
+                            hasError
+                                ? Colors.red.shade700
+                                : Colors.green.shade700,
                       ),
                     ),
                   ),
@@ -145,7 +145,7 @@ class _ExportDataState extends State<ExportData> {
               ),
             ),
           ],
-          
+
           if (exportedFilePath.isNotEmpty && !hasError && !kIsWeb) ...[
             const SizedBox(height: 24),
             Card(
@@ -168,9 +168,7 @@ class _ExportDataState extends State<ExportData> {
                     const SizedBox(height: 8),
                     Text(
                       'Saved to: $exportedFilePath',
-                      style: const TextStyle(
-                        fontSize: 14,
-                      ),
+                      style: const TextStyle(fontSize: 14),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
@@ -197,7 +195,7 @@ class _ExportDataState extends State<ExportData> {
       ),
     );
   }
-  
+
   Future<void> _exportDataToExcel() async {
     setState(() {
       isExporting = true;
@@ -207,30 +205,32 @@ class _ExportDataState extends State<ExportData> {
     });
 
     try {
-      // Create Excel workbook
       final excelFile = excel.Excel.createExcel();
-      
-      // Delete the default Sheet1 that's created automatically
+
+      // Excel.createExcel() automatically creates Sheet1
+      // Use the existing Sheet1 to create our custom sheets
       if (excelFile.sheets.containsKey('Sheet1')) {
+        // Create custom sheets by copying Sheet1
+        excelFile.copy('Sheet1', 'Customers');
+        excelFile.copy('Sheet1', 'Transactions');
+        excelFile.copy('Sheet1', 'Sales');
+
+        // Now we can delete the original Sheet1
         excelFile.delete('Sheet1');
       }
-      
-      // Create sheets for customers and transactions
+
       final customersSheet = excelFile['Customers'];
       final transactionsSheet = excelFile['Transactions'];
       final salesSheet = excelFile['Sales'];
-      
-      // Add headers to customers sheet - removing Customer ID
+
       final customerHeaders = [
-        'Name', 
-        'Phone', 
-        'CNIC', 
-        'Page Number', 
-        'Balance', 
-        'Created Date'
+        'Name',
+        'Phone',
+        'CNIC',
+        'Page Number',
+        'Balance',
+        'Created Date',
       ];
-      
-      // Add headers to transactions sheet - removing Transaction ID and Customer ID
       final transactionHeaders = [
         'Date',
         'Customer Name',
@@ -238,10 +238,8 @@ class _ExportDataState extends State<ExportData> {
         'Previous Balance',
         'Amount Paid',
         'Amount Taken',
-        'New Balance'
+        'New Balance',
       ];
-      
-      // Add headers to sales sheet
       final salesHeaders = [
         'Date',
         'Petrol Litres',
@@ -249,83 +247,98 @@ class _ExportDataState extends State<ExportData> {
         'Diesel Litres',
         'Diesel Amount (Rs)',
         'Total Litres',
-        'Total Amount (Rs)'
+        'Total Amount (Rs)',
       ];
-      
-      // Style for headers
+
       final headerStyle = excel.CellStyle(
         bold: true,
         backgroundColorHex: excel.ExcelColor.fromHexString('#AED581'),
         horizontalAlign: excel.HorizontalAlign.Center,
       );
-      
-      // Add headers to the sheets
+
       for (var i = 0; i < customerHeaders.length; i++) {
-        final cell = customersSheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+        final cell = customersSheet.cell(
+          excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
+        );
         cell.value = excel.TextCellValue(customerHeaders[i]);
         cell.cellStyle = headerStyle;
       }
-      
+
       for (var i = 0; i < transactionHeaders.length; i++) {
-        final cell = transactionsSheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+        final cell = transactionsSheet.cell(
+          excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
+        );
         cell.value = excel.TextCellValue(transactionHeaders[i]);
         cell.cellStyle = headerStyle;
       }
-      
+
       for (var i = 0; i < salesHeaders.length; i++) {
-        final cell = salesSheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+        final cell = salesSheet.cell(
+          excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
+        );
         cell.value = excel.TextCellValue(salesHeaders[i]);
         cell.cellStyle = headerStyle;
       }
-      
-      // Fetch all customers
-      final customersSnapshot = await FirebaseFirestore.instance
-          .collection('customers')
-          .get();
-      
-      // Fetch all transactions
-      final transactionsSnapshot = await FirebaseFirestore.instance
-          .collection('transactions')
-          .orderBy('date', descending: true)
-          .get();
-      
-      // Fetch all sales data
-      final salesSnapshot = await FirebaseFirestore.instance
-          .collection('sales')
-          .orderBy('date', descending: true)
-          .get();
-      
-      // Add customer data to the sheet
+
+      final Future<QuerySnapshot> customersQuery =
+          FirebaseFirestore.instance.collection('customers').get();
+      final Future<QuerySnapshot> transactionsQuery =
+          FirebaseFirestore.instance
+              .collection('transactions')
+              .orderBy('date', descending: true)
+              .get();
+      final Future<QuerySnapshot> salesQuery =
+          FirebaseFirestore.instance
+              .collection('sales')
+              .orderBy('date', descending: true)
+              .get();
+
+      final results = await Future.wait([
+        customersQuery,
+        transactionsQuery,
+        salesQuery,
+      ]);
+
+      final customersSnapshot = results[0];
+      final transactionsSnapshot = results[1];
+      final salesSnapshot = results[2];
+
       int customerRow = 1;
       for (var doc in customersSnapshot.docs) {
-        final data = doc.data();
+        final data = doc.data() as Map<String, dynamic>;
         final List<dynamic> rowData = [
-          // Remove Customer ID
           data['name'] ?? '',
           data['phone'] ?? '',
           data['cnic'] ?? '',
           data['page_number'] ?? '',
           data['balance'] ?? 0.0,
-          data['created_at'] != null 
-              ? DateFormat('dd/MM/yyyy').format((data['created_at'] as Timestamp).toDate())
-              : 'N/A'
+          data['created_at'] != null
+              ? DateFormat(
+                'dd/MM/yyyy',
+              ).format((data['created_at'] as Timestamp).toDate())
+              : 'N/A',
         ];
-        
+
         for (var i = 0; i < rowData.length; i++) {
-          final cell = customersSheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: customerRow));
+          final cell = customersSheet.cell(
+            excel.CellIndex.indexByColumnRow(
+              columnIndex: i,
+              rowIndex: customerRow,
+            ),
+          );
           cell.value = excel.TextCellValue(rowData[i].toString());
         }
         customerRow++;
       }
-      
-      // Add transaction data to the sheet
+
       int transactionRow = 1;
       for (var doc in transactionsSnapshot.docs) {
-        final data = doc.data();
+        final data = doc.data() as Map<String, dynamic>;
         final List<dynamic> rowData = [
-          // Remove Transaction ID and Customer ID
-          data['date'] != null 
-              ? DateFormat('dd/MM/yyyy').format((data['date'] as Timestamp).toDate())
+          data['date'] != null
+              ? DateFormat(
+                'dd/MM/yyyy',
+              ).format((data['date'] as Timestamp).toDate())
               : 'N/A',
           data['customer_name'] ?? '',
           data['phone'] ?? '',
@@ -334,25 +347,37 @@ class _ExportDataState extends State<ExportData> {
           data['amount_taken'] ?? 0.0,
           data['new_balance'] ?? 0.0,
         ];
-        
+
         for (var i = 0; i < rowData.length; i++) {
-          final cell = transactionsSheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: transactionRow));
+          final cell = transactionsSheet.cell(
+            excel.CellIndex.indexByColumnRow(
+              columnIndex: i,
+              rowIndex: transactionRow,
+            ),
+          );
           cell.value = excel.TextCellValue(rowData[i].toString());
         }
         transactionRow++;
       }
-      
-      // Add sales data to the sheet
+
       int salesRow = 1;
       for (var doc in salesSnapshot.docs) {
-        final data = doc.data();
-        final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
-        final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+        final data = doc.data() as Map<String, dynamic>;
+        final petrolLitres =
+            data['petrol_litres'] is num
+                ? (data['petrol_litres'] as num).toDouble()
+                : 0.0;
+        final dieselLitres =
+            data['diesel_litres'] is num
+                ? (data['diesel_litres'] as num).toDouble()
+                : 0.0;
         final totalLitres = petrolLitres + dieselLitres;
-        
+
         final List<dynamic> rowData = [
-          data['date'] != null 
-              ? DateFormat('dd/MM/yyyy').format((data['date'] as Timestamp).toDate())
+          data['date'] != null
+              ? DateFormat(
+                'dd/MM/yyyy',
+              ).format((data['date'] as Timestamp).toDate())
               : 'N/A',
           petrolLitres,
           data['petrol_rupees'] ?? 0.0,
@@ -361,63 +386,62 @@ class _ExportDataState extends State<ExportData> {
           totalLitres,
           data['total_amount'] ?? 0.0,
         ];
-        
+
         for (var i = 0; i < rowData.length; i++) {
-          final cell = salesSheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: salesRow));
+          final cell = salesSheet.cell(
+            excel.CellIndex.indexByColumnRow(
+              columnIndex: i,
+              rowIndex: salesRow,
+            ),
+          );
           cell.value = excel.TextCellValue(rowData[i].toString());
         }
         salesRow++;
       }
-      
-      // Auto-size columns
+
       for (var sheet in excelFile.sheets.values) {
         for (var i = 0; i < 10; i++) {
           sheet.setColumnWidth(i, 20);
         }
       }
-      
-      // Generate filename with current date
+
       final now = DateTime.now();
       final formattedDate = DateFormat('yyyy-MM-dd_HH-mm-ss').format(now);
-      final fileName = 'AlQaim_Export_$formattedDate.xlsx';
-      
-      // Get Excel file bytes
+      final fileName = 'Al_Qaim_Petroleum_exported_at_$formattedDate.xlsx';
+
       final fileBytes = excelFile.save();
       if (fileBytes == null) {
         throw Exception('Failed to generate Excel file');
       }
 
-      // Handle file download differently based on platform
       if (kIsWeb) {
-        // For web platform, create a download link
-        final blob = html.Blob([Uint8List.fromList(fileBytes)], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        final blob = html.Blob([
+          Uint8List.fromList(fileBytes),
+        ], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         final url = html.Url.createObjectUrlFromBlob(blob);
-        
-        // Create anchor element with download attribute
-        final anchor = html.AnchorElement(href: url)
-          ..setAttribute('download', fileName)
-          ..style.display = 'none';
-        
-        // Add to document body and trigger click
+
+        final anchor =
+            html.AnchorElement(href: url)
+              ..setAttribute('download', fileName)
+              ..style.display = 'none';
+
         html.document.body?.children.add(anchor);
         anchor.click();
-        
-        // Clean up
+
         html.document.body?.children.remove(anchor);
         html.Url.revokeObjectUrl(url);
-        
+
         setState(() {
           isExporting = false;
           statusMessage = 'Excel file downloaded successfully!';
         });
       } else {
-        // For non-web platforms, save to file system
         final downloadsDir = await _getDownloadsDirectory();
         final filePath = path.join(downloadsDir.path, fileName);
-        
+
         final file = File(filePath);
         await file.writeAsBytes(fileBytes);
-        
+
         setState(() {
           isExporting = false;
           statusMessage = 'Data exported successfully!';
@@ -425,50 +449,41 @@ class _ExportDataState extends State<ExportData> {
         });
       }
     } catch (e) {
-      print('Error exporting data: $e');
       setState(() {
         isExporting = false;
-        statusMessage = 'Error exporting data: $e';
+        statusMessage = 'Error exporting data: ${e.toString().split('\n')[0]}';
         hasError = true;
       });
     }
   }
-  
+
   Future<Directory> _getDownloadsDirectory() async {
     Directory? directory;
     try {
       if (Platform.isWindows) {
-        // For Windows, typically use the Downloads folder
         final home = Platform.environment['USERPROFILE']!;
         directory = Directory('$home\\Downloads');
       } else if (Platform.isAndroid) {
-        // For Android, use the external storage directory
         directory = await getExternalStorageDirectory();
       } else {
-        // For other platforms, use the documents directory
         directory = await getApplicationDocumentsDirectory();
       }
     } catch (e) {
-      print('Error getting downloads directory: $e');
-      // Fallback to temp directory
       directory = await getTemporaryDirectory();
     }
-    
-    // If directory is still null, use temporary directory as fallback
+
     directory ??= await getTemporaryDirectory();
-    
-    // Create directory if it doesn't exist
+
     if (!await directory.exists()) {
       await directory.create(recursive: true);
     }
-    
+
     return directory;
   }
-  
+
   void _openExportedFile() async {
     try {
       if (kIsWeb) {
-        // Web platforms don't have direct file system access
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('File should have been downloaded to your device'),
@@ -476,19 +491,15 @@ class _ExportDataState extends State<ExportData> {
         );
         return;
       }
-      
+
       final file = File(exportedFilePath);
       if (await file.exists()) {
-        // On Windows, open the containing folder
         if (Platform.isWindows) {
           final folderPath = path.dirname(exportedFilePath);
           await Process.run('explorer.exe', [folderPath]);
         } else if (Platform.isAndroid) {
-          // On Android, you'd typically use a plugin to open the file
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('File saved to downloads folder'),
-            ),
+            const SnackBar(content: Text('File saved to downloads folder')),
           );
         }
       } else {
@@ -500,13 +511,12 @@ class _ExportDataState extends State<ExportData> {
         );
       }
     } catch (e) {
-      print('Error opening file: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error opening file: $e'),
+          content: Text('Error: ${e.toString().split('\n')[0]}'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
-} 
+}
