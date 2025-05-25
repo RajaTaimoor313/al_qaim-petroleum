@@ -6,12 +6,28 @@ on:
   push:
     branches:
       - main
+
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: flutter build web
+      
+      # ✅ Set up Flutter
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.0'  # Change this to match your Flutter version
+
+      # ✅ Install dependencies
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ✅ Build web
+      - name: Build web
+        run: flutter build web
+
+      # ✅ Deploy to Firebase Hosting
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
