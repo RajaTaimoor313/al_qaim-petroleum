@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -584,7 +586,6 @@ class CustomerDetailsPage extends StatelessWidget {
     final double cardPadding = isMobile ? 12.0 : 16.0;
     final double titleFontSize = isMobile ? 20.0 : 24.0;
     final double headerFontSize = isMobile ? 18.0 : 20.0;
-    final double contentFontSize = isMobile ? 14.0 : 16.0;
     final double avatarRadius = isMobile ? 24.0 : 30.0;
     final double spacing = isMobile ? 12.0 : 16.0;
     final double dividerHeight = isMobile ? 16.0 : 24.0;

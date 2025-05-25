@@ -80,7 +80,6 @@ class _DashboardState extends State<Dashboard> {
         errorMessage = '';
       });
 
-      // Calculate start and end of the selected date
       final DateTime startOfDay = DateTime(
         selectedDate.year,
         selectedDate.month,
@@ -95,34 +94,38 @@ class _DashboardState extends State<Dashboard> {
         59,
       );
 
-      print(
-        'Fetching data for date range: ${startOfDay.toIso8601String()} to ${endOfDay.toIso8601String()}',
-      );
+      final transactionsQuery =
+          FirebaseFirestore.instance.collection('transactions').get();
+      final customersQuery =
+          FirebaseFirestore.instance.collection('customers').get();
+      final salesQuery = FirebaseFirestore.instance.collection('sales').get();
 
-      // Fetch transactions for the selected date - using direct timestamp comparison to ensure accuracy
-      final transactionsSnapshot =
-          await FirebaseFirestore.instance.collection('transactions').get();
+      final results = await Future.wait([
+        transactionsQuery,
+        customersQuery,
+        salesQuery,
+      ]);
 
-      // Calculate total credits and recovery for the selected date
+      final transactionsSnapshot = results[0];
+      final customersSnapshot = results[1];
+      final salesSnapshot = results[2];
+
       double dailyCredits = 0;
       double dailyRecovery = 0;
       List<Map<String, dynamic>> filteredTransactions = [];
 
-      // Manually filter transactions by date to ensure accuracy
       for (var doc in transactionsSnapshot.docs) {
         final data = doc.data();
         final transactionDate = data['date'] as Timestamp?;
 
         if (transactionDate != null) {
           final transactionDateTime = transactionDate.toDate();
-          // Check if this transaction falls within our date range
           if (transactionDateTime.isAfter(
                 startOfDay.subtract(const Duration(minutes: 1)),
               ) &&
               transactionDateTime.isBefore(
                 endOfDay.add(const Duration(minutes: 1)),
               )) {
-            // Valid transaction for our date range
             final amountTaken =
                 data['amount_taken'] is num
                     ? (data['amount_taken'] as num).toDouble()
@@ -133,7 +136,6 @@ class _DashboardState extends State<Dashboard> {
                     : 0.0;
             final customerName = data['customer_name'] ?? 'Unknown';
 
-            // Add to our filtered list
             filteredTransactions.add({
               'id': doc.id,
               'customer_name': customerName,
@@ -142,68 +144,37 @@ class _DashboardState extends State<Dashboard> {
               'date': transactionDateTime,
             });
 
-            // Update totals
             dailyCredits += amountTaken;
             dailyRecovery += amountPaid;
-
-            print(
-              'Including transaction: ${doc.id} from $customerName - Taken: $amountTaken, Paid: $amountPaid',
-            );
           }
         }
       }
-
-      print(
-        'Daily Credits: $dailyCredits from ${filteredTransactions.length} transactions',
-      );
-      print(
-        'Daily Recovery: $dailyRecovery from ${filteredTransactions.length} transactions',
-      );
-
-      // Calculate total receivable amount (total of all balances)
-      final customersSnapshot =
-          await FirebaseFirestore.instance.collection('customers').get();
 
       double totalReceivable = 0;
       for (var doc in customersSnapshot.docs) {
         final data = doc.data();
         final balance =
             data['balance'] is num ? (data['balance'] as num).toDouble() : 0.0;
-        final name = data['name'] ?? 'Unknown';
-
-        print('Customer: $name, Balance: $balance');
         totalReceivable += balance;
       }
 
-      print(
-        'Total Receivable: $totalReceivable from ${customersSnapshot.docs.length} customers',
-      );
-
-      // Fetch sales data for the selected date
-      final salesSnapshot =
-          await FirebaseFirestore.instance.collection('sales').get();
-
-      // Reset fuel values
       double dailyPetrolLitres = 0;
       double dailyPetrolRupees = 0;
       double dailyDieselLitres = 0;
       double dailyDieselRupees = 0;
 
-      // Filter sales by date
       for (var doc in salesSnapshot.docs) {
         final data = doc.data();
         final saleDate = data['date'] as Timestamp?;
 
         if (saleDate != null) {
           final saleDateTimeUTC = saleDate.toDate();
-          // Check if this sale falls within our date range
           if (saleDateTimeUTC.isAfter(
                 startOfDay.subtract(const Duration(minutes: 1)),
               ) &&
               saleDateTimeUTC.isBefore(
                 endOfDay.add(const Duration(minutes: 1)),
               )) {
-            // Extract fuel data
             final petrolLitres =
                 data['petrol_litres'] is num
                     ? (data['petrol_litres'] as num).toDouble()
@@ -221,23 +192,14 @@ class _DashboardState extends State<Dashboard> {
                     ? (data['diesel_rupees'] as num).toDouble()
                     : 0.0;
 
-            // Update totals
             dailyPetrolLitres += petrolLitres;
             dailyPetrolRupees += petrolRupees;
             dailyDieselLitres += dieselLitres;
             dailyDieselRupees += dieselRupees;
-
-            print(
-              'Including sale: ${doc.id} - Petrol: $petrolLitres L, Rs. $petrolRupees - Diesel: $dieselLitres L, Rs. $dieselRupees',
-            );
           }
         }
       }
 
-      print('Daily Petrol: $dailyPetrolLitres L, Rs. $dailyPetrolRupees');
-      print('Daily Diesel: $dailyDieselLitres L, Rs. $dailyDieselRupees');
-
-      // Fetch data for the chart based on the selected time frame
       final List<MonthlyData> chartData = await _fetchChartData();
 
       setState(() {
@@ -252,11 +214,11 @@ class _DashboardState extends State<Dashboard> {
         isLoading = false;
       });
     } catch (e) {
-      print('Error fetching dashboard data: $e');
       setState(() {
         isLoading = false;
         hasError = true;
-        errorMessage = 'Failed to load dashboard data: $e';
+        errorMessage =
+            'Failed to load dashboard data: ${e.toString().split('\n')[0]}';
       });
     }
   }
@@ -265,20 +227,11 @@ class _DashboardState extends State<Dashboard> {
     List<MonthlyData> result = [];
 
     try {
-      // Get the current date and time
-      final now = DateTime.now();
-
-      // Fetch all sales data for efficiency
       final allSalesSnapshot =
           await FirebaseFirestore.instance.collection('sales').get();
 
-      print(
-        'Fetched ${allSalesSnapshot.docs.length} total sales records for chart',
-      );
-
       switch (selectedTimeFrame) {
         case ChartTimeFrame.daily:
-          // Show 3 days before selected date, selected date, and 2 days after
           for (int i = -3; i <= 2; i++) {
             final day = selectedDate.add(Duration(days: i));
             final startOfDay = DateTime(day.year, day.month, day.day);
@@ -287,7 +240,6 @@ class _DashboardState extends State<Dashboard> {
             double dailyPetrolLitres = 0;
             double dailyDieselLitres = 0;
 
-            // Filter sales for this day
             for (var doc in allSalesSnapshot.docs) {
               final data = doc.data();
               final saleDate = data['date'] as Timestamp?;
@@ -325,8 +277,6 @@ class _DashboardState extends State<Dashboard> {
           break;
 
         case ChartTimeFrame.weekly:
-          // Show 3 weeks before selected date week, selected week, and 2 weeks after
-          // Find the start of the week containing the selected date
           final selectedWeekStart = selectedDate.subtract(
             Duration(days: selectedDate.weekday - 1),
           );
@@ -338,7 +288,6 @@ class _DashboardState extends State<Dashboard> {
             double weeklyPetrolLitres = 0;
             double weeklyDieselLitres = 0;
 
-            // Filter sales for this week
             for (var doc in allSalesSnapshot.docs) {
               final data = doc.data();
               final saleDate = data['date'] as Timestamp?;
@@ -383,7 +332,6 @@ class _DashboardState extends State<Dashboard> {
           break;
 
         case ChartTimeFrame.monthly:
-          // Calculate 3 months before, current month, and 2 months after
           final currentYear = selectedDate.year;
           final currentMonth = selectedDate.month;
 
@@ -392,10 +340,9 @@ class _DashboardState extends State<Dashboard> {
             int year = currentYear;
             int month = monthOffset;
 
-            // Adjust year and month for values outside 1-12 range
             if (monthOffset <= 0) {
               year = currentYear - 1;
-              month = 12 + monthOffset; // monthOffset is negative
+              month = 12 + monthOffset;
             } else if (monthOffset > 12) {
               year = currentYear + 1;
               month = monthOffset - 12;
@@ -418,7 +365,6 @@ class _DashboardState extends State<Dashboard> {
             double monthlyPetrolLitres = 0;
             double monthlyDieselLitres = 0;
 
-            // Filter sales for this month
             for (var doc in allSalesSnapshot.docs) {
               final data = doc.data();
               final saleDate = data['date'] as Timestamp?;
@@ -464,7 +410,6 @@ class _DashboardState extends State<Dashboard> {
           break;
 
         case ChartTimeFrame.annual:
-          // Show 3 years before selected date year, selected year, and 2 years after
           final currentYear = selectedDate.year;
 
           for (int i = -3; i <= 2; i++) {
@@ -475,7 +420,6 @@ class _DashboardState extends State<Dashboard> {
             double yearlyPetrolLitres = 0;
             double yearlyDieselLitres = 0;
 
-            // Filter sales for this year
             for (var doc in allSalesSnapshot.docs) {
               final data = doc.data();
               final saleDate = data['date'] as Timestamp?;
@@ -506,7 +450,7 @@ class _DashboardState extends State<Dashboard> {
             result.add(
               MonthlyData(
                 year: year,
-                month: 1, // Just a placeholder
+                month: 1,
                 petrolLitres: yearlyPetrolLitres,
                 dieselLitres: yearlyDieselLitres,
                 label: i == 0 ? 'This Year' : year.toString(),
@@ -515,15 +459,8 @@ class _DashboardState extends State<Dashboard> {
           }
           break;
       }
-
-      // Print the result for debugging
-      for (var data in result) {
-        print(
-          'Period: ${data.label} - Credits: ${data.petrolLitres}, Recovery: ${data.dieselLitres}',
-        );
-      }
     } catch (e) {
-      print('Error in _fetchChartData: $e');
+      debugPrint('Error in _fetchChartData: ${e.toString().split('\n')[0]}');
     }
 
     return result;
@@ -537,9 +474,15 @@ class _DashboardState extends State<Dashboard> {
     final double padding = isMobile ? 12.0 : 16.0;
     final double verticalSpacing = isMobile ? 16.0 : 24.0;
     final double borderRadius = isMobile ? 12.0 : 15.0;
+    final double topMargin = 10.0; // Add top margin
 
     return Container(
-      padding: EdgeInsets.all(padding),
+      padding: EdgeInsets.only(
+        left: padding,
+        right: padding,
+        bottom: padding,
+        top: padding + topMargin, // Add extra top padding
+      ),
       decoration: BoxDecoration(
         color: Colors.grey.shade50,
         borderRadius: BorderRadius.circular(borderRadius),
@@ -1213,7 +1156,7 @@ class _DashboardState extends State<Dashboard> {
                                     final String period = data.label;
                                     String value = rod.y.toStringAsFixed(2);
                                     return BarTooltipItem(
-                                      '$period\n${rodIndex == 0 ? 'Petrol' : 'Diesel'}: ${value} L',
+                                      '$period\n${rodIndex == 0 ? 'Petrol' : 'Diesel'}: $value L',
                                       const TextStyle(color: Colors.white),
                                     );
                                   },
@@ -1243,7 +1186,7 @@ class _DashboardState extends State<Dashboard> {
                                           return 'Today';
                                         } else if (label.length > 5) {
                                           // Truncate longer labels
-                                          return label.substring(0, 4) + '..';
+                                          return '${label.substring(0, 4)}..';
                                         }
                                       }
                                       return monthlyData[index].label;
@@ -1266,7 +1209,7 @@ class _DashboardState extends State<Dashboard> {
                                     if (value == 0) return '0';
                                     // Use shorter format on mobile
                                     return isMobile
-                                        ? '${NumberFormat.compact().format(value)}'
+                                        ? NumberFormat.compact().format(value)
                                         : '${NumberFormat.compact().format(value)} L';
                                   },
                                 ),
@@ -1686,6 +1629,5 @@ class MonthlyData {
     required this.petrolLitres,
     required this.dieselLitres,
     String? label,
-  }) : this.label =
-           label ?? DateFormat('MMM').format(DateTime(year, month, day));
+  }) : label = label ?? DateFormat('MMM').format(DateTime(year, month, day));
 }
