@@ -1449,12 +1449,9 @@ class _DashboardState extends State<Dashboard> {
                 final index = value.toInt();
                 if (index >= 0 &&
                     index < monthlyData.length) {
-                  // For mobile, use an even shorter label format
                   if (isMobile) {
-                    // Show just the day number or abbreviation for cleaner display
                     final label = monthlyData[index].label;
                     if (label.length > 5) {
-                      // Truncate longer labels
                       return '${label.substring(0, 4)}..';
                     }
                   }
@@ -1462,7 +1459,7 @@ class _DashboardState extends State<Dashboard> {
                 }
                 return '';
               },
-              rotateAngle: isMobile ? 30 : 0, // Rotate labels on mobile for better fit
+              rotateAngle: isMobile ? 30 : 0,
             ),
             leftTitles: SideTitles(
               showTitles: true,
@@ -1472,15 +1469,14 @@ class _DashboardState extends State<Dashboard> {
                     fontWeight: FontWeight.bold,
                     fontSize: isMobile ? 9 : 12,
                   ),
-              margin: isMobile ? 30 : 50,
-              reservedSize: isMobile ? 40 : 60,
+              margin: isMobile ? 8 : 12,
+              reservedSize: isMobile ? 28 : 35,
               interval: _getIntervalForTimeFrame(),
               getTitles: (value) {
                 if (value == 0) return '0';
-                // Use shorter format on mobile
                 return isMobile
                     ? NumberFormat.compact().format(value)
-                    : '${NumberFormat.compact().format(value)} L';
+                    : NumberFormat.compact().format(value);
               },
             ),
           ),

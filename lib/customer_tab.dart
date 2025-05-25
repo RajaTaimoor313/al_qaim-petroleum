@@ -637,20 +637,26 @@ class CustomerDetailsPage extends StatelessWidget {
                       .limit(50)
                       .snapshots(),
               builder: (context, transactionSnapshot) {
-                double displayBalance = customer['balance']?.toDouble() ?? 0.0;
-                Color balanceColor =
-                    displayBalance >= 0 ? Colors.green : Colors.red;
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text(
+                      'Error: ${snapshot.error}\nEnsure your device has internet access.',
+                      style: const TextStyle(color: Colors.red),
+                    ),
+                  );
+                }
 
-                if (transactionSnapshot.hasData &&
-                    transactionSnapshot.data!.docs.isNotEmpty) {
+                double displayBalance = customer['balance']?.toDouble() ?? 0.0;
+                Color balanceColor = displayBalance >= 0 ? Colors.green : Colors.red;
+
+                if (transactionSnapshot.hasData && transactionSnapshot.data!.docs.isNotEmpty) {
                   final transactions = transactionSnapshot.data!.docs;
-                  final latestTransaction =
-                      transactions.first.data() as Map<String, dynamic>;
-                  displayBalance =
-                      latestTransaction['new_balance']?.toDouble() ??
-                      displayBalance;
-                  balanceColor =
-                      displayBalance >= 0 ? Colors.green : Colors.red;
+                  final latestTransaction = transactions.first.data() as Map<String, dynamic>;
+                  displayBalance = latestTransaction['new_balance']?.toDouble() ?? displayBalance;
+                  balanceColor = displayBalance >= 0 ? Colors.green : Colors.red;
                 }
 
                 return Column(
@@ -748,43 +754,50 @@ class CustomerDetailsPage extends StatelessWidget {
                     ),
                     SizedBox(height: spacing),
                     Expanded(
-                      child: transactionSnapshot.hasData
-                          ? transactionSnapshot.data!.docs.isEmpty
+                      child: transactionSnapshot.connectionState == ConnectionState.waiting
+                          ? const Center(child: CircularProgressIndicator())
+                          : transactionSnapshot.hasError
                               ? Center(
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      const Icon(
-                                        Icons.receipt_long,
-                                        size: 48,
-                                        color: Colors.grey,
-                                      ),
-                                      const SizedBox(height: 16),
-                                      const Text(
-                                        'No Transaction History',
-                                        style: TextStyle(
-                                          color: Colors.grey,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'Add transactions for this customer to see them here.',
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: Colors.grey.shade600,
-                                          fontSize: 14,
-                                        ),
-                                      ),
-                                    ],
+                                  child: Text(
+                                    'Error loading transactions: ${transactionSnapshot.error}',
+                                    style: const TextStyle(color: Colors.red),
                                   ),
                                 )
-                              : _buildTransactionsList(
-                                  transactionSnapshot.data!.docs,
-                                  isMobile,
-                                )
-                          : const Center(child: CircularProgressIndicator()),
+                              : !transactionSnapshot.hasData || transactionSnapshot.data!.docs.isEmpty
+                                  ? Center(
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          const Icon(
+                                            Icons.receipt_long,
+                                            size: 48,
+                                            color: Colors.grey,
+                                          ),
+                                          const SizedBox(height: 16),
+                                          const Text(
+                                            'No Transaction History',
+                                            style: TextStyle(
+                                              color: Colors.grey,
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Add transactions for this customer to see them here.',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                              color: Colors.grey.shade600,
+                                              fontSize: 14,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    )
+                                  : _buildTransactionsList(
+                                      transactionSnapshot.data!.docs,
+                                      isMobile,
+                                    ),
                     ),
                   ],
                 );
