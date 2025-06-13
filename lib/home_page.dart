@@ -7,6 +7,8 @@ import 'dash_board_tab.dart';
 import 'data_entry_tab.dart';
 import 'export_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:html' as html;
+import 'dart:async';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,22 +17,54 @@ class HomePage extends StatefulWidget {
   State<HomePage> createState() => _HomePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   int _selectedIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final AuthService _authService = AuthService();
   final ActivityService _activityService = ActivityService();
+  StreamSubscription? _visibilitySubscription;
 
   @override
   void initState() {
     super.initState();
     _activityService.startActivityTimer(context);
+    WidgetsBinding.instance.addObserver(this);
+    _setupVisibilityListener();
+  }
+
+  void _setupVisibilityListener() {
+    _visibilitySubscription = html.window.onBeforeUnload.listen((event) {
+      _handleAppClose();
+    });
+  }
+
+  Future<void> _handleAppClose() async {
+    _activityService.stopTimer();
+    await _authService.signOut();
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const PasswordScreen(
+            destination: HomePage(),
+          ),
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _visibilitySubscription?.cancel();
     _activityService.stopTimer();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached) {
+      _handleAppClose();
+    }
   }
 
   void _toggleDrawer() {
@@ -62,17 +96,7 @@ class _HomePageState extends State<HomePage> {
     ) ?? false;
 
     if (shouldLogout) {
-      _activityService.stopTimer();
-      await _authService.signOut();
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (context) => const PasswordScreen(
-              destination: HomePage(),
-            ),
-          ),
-        );
-      }
+      await _handleAppClose();
     }
   }
 
