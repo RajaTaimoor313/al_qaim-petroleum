@@ -702,84 +702,81 @@ class _AddDataState extends State<AddData> {
 
   // Submission logic for sales data
   Future<void> _submitSales() async {
-    if (!_formKey.currentState!.validate()) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please correct the errors in the form'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
-    }
+    if (_formKey.currentState!.validate()) {
+      try {
+        final petrolLitres = double.tryParse(petrolLitresController.text) ?? 0.0;
+        final petrolRupees = double.tryParse(petrolRupeesController.text) ?? 0.0;
+        final dieselLitres = double.tryParse(dieselLitresController.text) ?? 0.0;
+        final dieselRupees = double.tryParse(dieselRupeesController.text) ?? 0.0;
+        final totalAmount = petrolRupees + dieselRupees;
 
-    setState(() => isSearching = true);
-
-    try {
-      // Parse values
-      final petrolLitres =
-          double.tryParse(petrolLitresController.text.trim()) ?? 0.0;
-      final petrolRupees =
-          double.tryParse(petrolRupeesController.text.trim()) ?? 0.0;
-      final dieselLitres =
-          double.tryParse(dieselLitresController.text.trim()) ?? 0.0;
-      final dieselRupees =
-          double.tryParse(dieselRupeesController.text.trim()) ?? 0.0;
-
-      // At least one value should be greater than zero
-      if (petrolLitres <= 0 &&
-          petrolRupees <= 0 &&
-          dieselLitres <= 0 &&
-          dieselRupees <= 0) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Please enter at least one value greater than zero'),
-            backgroundColor: Colors.red,
-          ),
+        // Show confirmation dialog
+        final bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Confirm Sales Data'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Petrol: ${petrolLitres.toStringAsFixed(2)} L - Rs. ${petrolRupees.toStringAsFixed(2)}'),
+                  Text('Diesel: ${dieselLitres.toStringAsFixed(2)} L - Rs. ${dieselRupees.toStringAsFixed(2)}'),
+                  const Divider(),
+                  Text('Total Amount: Rs. ${totalAmount.toStringAsFixed(2)}'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Confirm'),
+                ),
+              ],
+            );
+          },
         );
-        setState(() => isSearching = false);
-        return;
-      }
 
-      // Create the sales data object
-      final salesData = {
-        'date': Timestamp.fromDate(selectedDate),
+        if (confirm == true) {
+          // Proceed with saving the sales data
+          await FirebaseFirestore.instance.collection('sales').add({
         'petrol_litres': petrolLitres,
         'petrol_rupees': petrolRupees,
         'diesel_litres': dieselLitres,
         'diesel_rupees': dieselRupees,
-        'total_amount': petrolRupees + dieselRupees,
-        'created_at': FieldValue.serverTimestamp(),
-      };
-
-      // Save to Firestore
-      await FirebaseFirestore.instance.collection('sales').add(salesData);
+            'total_amount': totalAmount,
+            'date': Timestamp.now(),
+          });
 
       // Show success message
-      if (!mounted) return;
-
+          if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Sales data saved successfully'),
           backgroundColor: Colors.green,
         ),
       );
+          }
 
-      // Reset the form
-      _resetSalesForm();
+          // Clear form
+          _formKey.currentState!.reset();
+          petrolLitresController.clear();
+          petrolRupeesController.clear();
+          dieselLitresController.clear();
+          dieselRupeesController.clear();
+        }
     } catch (e) {
-      print('Error in _submitSales: $e');
-      if (!mounted) return;
-
+        if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error saving sales data: $e'),
+              content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
         ),
       );
-    } finally {
-      if (mounted) {
-        setState(() => isSearching = false);
+        }
       }
     }
   }
@@ -1005,180 +1002,100 @@ class _AddDataState extends State<AddData> {
   }
 
   Future<void> _submitTransaction() async {
-    if (!_formKey.currentState!.validate()) {
-      print('Form validation failed');
-      return;
-    }
-
-    setState(() => isSearching = true);
-    try {
-      print('Step 1: Starting transaction submission...');
-
-      // Validate selected customer
-      if (selectedCustomerId == null ||
-          customerNameController.text.trim().isEmpty) {
-        print('Step 1 Failed: Customer selection is incomplete');
-        throw Exception('Customer selection is incomplete');
-      }
-      print(
-        'Step 1 Passed: Customer ID: $selectedCustomerId, Name: ${customerNameController.text}',
-      );
-
-      // Validate and parse numerical inputs
-      final amountPaidText = amountPaidController.text.trim();
-      final amountTakenText = amountTakenController.text.trim();
-      final previousBalanceText = balanceController.text.trim();
-      print(
-        'Step 2: Validating inputs - Amount Paid: $amountPaidText, Amount Taken: $amountTakenText, Previous Balance: $previousBalanceText',
-      );
-      if (amountPaidText.isEmpty ||
-          amountTakenText.isEmpty ||
-          previousBalanceText.isEmpty) {
-        print('Step 2 Failed: One or more inputs are empty');
-        throw Exception(
-          'Amount paid, amount taken, or previous balance cannot be empty',
-        );
-      }
-
-      final amountPaid = double.tryParse(amountPaidText) ?? 0.0;
-      final amountTaken = double.tryParse(amountTakenText) ?? 0.0;
-      final previousBalance = double.tryParse(previousBalanceText) ?? 0.0;
-
-      print(
-        'Step 2 Passed: Parsed values - Amount Paid: $amountPaid, Amount Taken: $amountTaken, Previous Balance: $previousBalance',
-      );
-
-      // Calculate new balance - Amount Paid reduces balance, Amount Taken increases it
-      final newBalance = previousBalance - amountPaid + amountTaken;
-      print('Step 3: Calculated new balance: $newBalance');
-      if (newBalance < -1000000 || newBalance > 1000000) {
-        print('Step 3 Failed: New balance out of range: $newBalance');
-        if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'New balance must be between -1,000,000 and 1,000,000',
-            ),
-            backgroundColor: Colors.red,
-          ),
-        );
-        setState(() => isSearching = false);
-        return;
-      }
-      print('Step 3 Passed: New balance is within range');
-
-      // No need to validate selectedDate - it's always initialized
-      print('Step 4 Passed: Selected date: $selectedDate');
-
-      // Perform Firestore operations
-      print('Step 5: Performing Firestore operations...');
-
+    if (_formKey.currentState!.validate()) {
       try {
-        // Create the transaction data first
-        final transactionData = {
+        final customerName = customerNameController.text.trim();
+        final phone = phoneController.text.trim();
+        final amountPaid = double.tryParse(amountPaidController.text) ?? 0.0;
+        final amountTaken = double.tryParse(amountTakenController.text) ?? 0.0;
+        final previousBalance = double.tryParse(balanceController.text) ?? 0.0;
+        final newBalance = previousBalance + amountTaken - amountPaid;
+
+        // Show confirmation dialog
+        final bool? confirm = await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Confirm Transaction'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Customer: $customerName'),
+                  Text('Phone: $phone'),
+                  Text('Previous Balance: Rs. ${previousBalance.toStringAsFixed(2)}'),
+                  Text('Amount Paid: Rs. ${amountPaid.toStringAsFixed(2)}'),
+                  Text('Amount Taken: Rs. ${amountTaken.toStringAsFixed(2)}'),
+                  Text('New Balance: Rs. ${newBalance.toStringAsFixed(2)}'),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  child: const Text('Confirm'),
+                ),
+              ],
+            );
+          },
+        );
+
+        if (confirm == true) {
+          // Proceed with saving the transaction
+          await FirebaseFirestore.instance.collection('transactions').add({
           'customer_id': selectedCustomerId,
-          'customer_name': customerNameController.text.trim(),
-          'phone': phoneController.text.trim(),
+            'customer_name': customerName,
+            'phone': phone,
           'previous_balance': previousBalance,
           'amount_paid': amountPaid,
           'amount_taken': amountTaken,
           'new_balance': newBalance,
-          'date': Timestamp.fromDate(selectedDate),
-          'created_at': FieldValue.serverTimestamp(),
-        };
+            'date': Timestamp.now(),
+          });
 
-        // Verify that we can access the customer document before proceeding
-        final customerDoc =
-            await FirebaseFirestore.instance
-                .collection('customers')
-                .doc(selectedCustomerId)
-                .get();
-
-        if (!customerDoc.exists) {
-          throw Exception(
-            'Customer document not found. The customer may have been deleted.',
-          );
-        }
-
-        // Use a simple set/update approach instead of a transaction to reduce complexity
-        // 1. Add the transaction record
-        final transactionRef = await FirebaseFirestore.instance
-            .collection('transactions')
-            .add(transactionData);
-
-        print('Transaction document created with ID: ${transactionRef.id}');
-
-        // 2. Update the customer's balance
+          // Update customer balance
+          if (selectedCustomerId != null) {
         await FirebaseFirestore.instance
             .collection('customers')
             .doc(selectedCustomerId)
             .update({'balance': newBalance});
-
-        print('Customer balance updated successfully');
-      } catch (e) {
-        print('Firestore operation failed: $e');
-        throw Exception('Failed to save transaction: $e');
       }
 
-      print('Step 5 Passed: Transaction completed successfully');
-
       // Show success message
-      if (!mounted) return;
-      print('Step 6: Showing success message');
+          if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Transaction added successfully and balance updated'),
+                content: Text('Transaction saved successfully'),
           backgroundColor: Colors.green,
         ),
       );
-      _resetForm();
-      print('Step 6 Passed: Success message shown, form reset');
-    } on FirebaseException catch (e) {
-      print(
-        'FirebaseException in _submitTransaction: ${e.code} - ${e.message}',
-      );
-      if (!mounted) return;
+          }
+
+          // Clear form
+          _formKey.currentState!.reset();
+          customerNameController.clear();
+          phoneController.clear();
+          balanceController.clear();
+          amountPaidController.clear();
+          amountTakenController.clear();
+          setState(() {
+            selectedCustomerId = null;
+            customerFound = false;
+          });
+        }
+      } catch (e) {
+        if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'Firestore error: ${e.message}\nCheck your Firestore rules and internet connection.',
-          ),
+              content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
-    } on PlatformException catch (e) {
-      print(
-        'PlatformException in _submitTransaction: ${e.code} - ${e.message}',
-      );
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Platform error: ${e.message}\nTry updating the Firestore plugin or restarting the app.',
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
-    } catch (e, stackTrace) {
-      print('Unexpected error in _submitTransaction: $e');
-      print('Stack trace: $stackTrace');
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Unexpected error: $e\nPlease try again or contact support.',
-          ),
-          backgroundColor: Colors.red,
-          duration: const Duration(seconds: 5),
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => isSearching = false);
+            ),
+          );
+        }
       }
-      print('Step 7: Transaction process completed (success or failure)');
     }
   }
 }

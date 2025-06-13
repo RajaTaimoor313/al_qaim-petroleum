@@ -629,21 +629,20 @@ class CustomerDetailsPage extends StatelessWidget {
                 snapshot.data!.data() as Map<String, dynamic>;
 
             return StreamBuilder<QuerySnapshot>(
-              stream:
-                  FirebaseFirestore.instance
-                      .collection('transactions')
-                      .where('customer_id', isEqualTo: customerId)
-                      .orderBy('date', descending: true)
-                      .limit(50)
-                      .snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('transactions')
+                  .where('customer_id', isEqualTo: customerId)
+                  .orderBy('date', descending: true)
+                  .limit(50)
+                  .snapshots(),
               builder: (context, transactionSnapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) {
+                if (transactionSnapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
-                if (snapshot.hasError) {
+                if (transactionSnapshot.hasError) {
                   return Center(
                     child: Text(
-                      'Error: ${snapshot.error}\nEnsure your device has internet access.',
+                      'Error: ${transactionSnapshot.error}\nEnsure your device has internet access.',
                       style: const TextStyle(color: Colors.red),
                     ),
                   );
@@ -659,147 +658,117 @@ class CustomerDetailsPage extends StatelessWidget {
                   balanceColor = displayBalance >= 0 ? Colors.green : Colors.red;
                 }
 
-                return Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Padding(
-                        padding: EdgeInsets.all(cardPadding),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                CircleAvatar(
-                                  radius: avatarRadius,
-                                  backgroundColor: Colors.green,
-                                  child: Text(
-                                    customer['name'][0].toUpperCase(),
-                                    style: TextStyle(
-                                      fontSize: avatarRadius * 0.8,
-                                      color: Colors.white,
+                return SingleChildScrollView(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Card(
+                        elevation: 4,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Padding(
+                          padding: EdgeInsets.all(cardPadding),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: avatarRadius,
+                                    backgroundColor: Colors.green,
+                                    child: Text(
+                                      customer['name'][0].toUpperCase(),
+                                      style: TextStyle(
+                                        fontSize: avatarRadius * 0.8,
+                                        color: Colors.white,
+                                      ),
                                     ),
                                   ),
-                                ),
-                                SizedBox(width: spacing),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        customer['name'],
-                                        style: TextStyle(
-                                          fontSize: titleFontSize,
-                                          fontWeight: FontWeight.bold,
+                                  SizedBox(width: spacing),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          customer['name'],
+                                          style: TextStyle(
+                                            fontSize: titleFontSize,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                ),
-                              ],
-                            ),
-                            Divider(height: dividerHeight),
-                            _buildInfoRow(
-                              Icons.phone,
-                              'Phone',
-                              customer['phone'],
-                              isMobile: isMobile,
-                            ),
-                            _buildInfoRow(
-                              Icons.credit_card,
-                              'CNIC',
-                              customer['cnic'] ?? 'N/A',
-                              isMobile: isMobile,
-                            ),
-                            _buildInfoRow(
-                              Icons.book,
-                              'Page Number',
-                              customer['page_number'] ?? 'N/A',
-                              isMobile: isMobile,
-                            ),
-                            _buildInfoRow(
-                              Icons.account_balance_wallet,
-                              'Balance',
-                              displayBalance.toString(),
-                              valueColor: balanceColor,
-                              isMobile: isMobile,
-                            ),
-                            _buildInfoRow(
-                              Icons.calendar_today,
-                              'Created',
-                              customer['created_at'] != null
-                                  ? DateFormat('dd/MM/yyyy').format(
-                                    (customer['created_at'] as Timestamp)
-                                        .toDate(),
-                                  )
-                                  : 'N/A',
-                              isMobile: isMobile,
-                            ),
-                          ],
+                                ],
+                              ),
+                              Divider(height: dividerHeight),
+                              _buildInfoRow(
+                                Icons.phone,
+                                'Phone',
+                                customer['phone'],
+                                isMobile: isMobile,
+                              ),
+                              _buildInfoRow(
+                                Icons.credit_card,
+                                'CNIC',
+                                customer['cnic'] ?? 'N/A',
+                                isMobile: isMobile,
+                              ),
+                              _buildInfoRow(
+                                Icons.book,
+                                'Page Number',
+                                customer['page_number'] ?? 'N/A',
+                                isMobile: isMobile,
+                              ),
+                              _buildInfoRow(
+                                Icons.account_balance_wallet,
+                                'Balance',
+                                'Rs. ${displayBalance.toStringAsFixed(2)}',
+                                valueColor: balanceColor,
+                                isMobile: isMobile,
+                              ),
+                              _buildInfoRow(
+                                Icons.calendar_today,
+                                'Created',
+                                customer['created_at'] != null
+                                    ? DateFormat('dd/MM/yyyy').format(
+                                      (customer['created_at'] as Timestamp).toDate(),
+                                    )
+                                    : 'N/A',
+                                isMobile: isMobile,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: spacing + 4.0),
-                    Text(
-                      'Transaction History',
-                      style: TextStyle(
-                        fontSize: headerFontSize,
-                        fontWeight: FontWeight.bold,
+                      SizedBox(height: spacing + 4.0),
+                      Text(
+                        'Transaction History',
+                        style: TextStyle(
+                          fontSize: headerFontSize,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    SizedBox(height: spacing),
-                    Expanded(
-                      child: transactionSnapshot.connectionState == ConnectionState.waiting
-                          ? const Center(child: CircularProgressIndicator())
-                          : transactionSnapshot.hasError
-                              ? Center(
-                                  child: Text(
-                                    'Error loading transactions: ${transactionSnapshot.error}',
-                                    style: const TextStyle(color: Colors.red),
-                                  ),
-                                )
-                              : !transactionSnapshot.hasData || transactionSnapshot.data!.docs.isEmpty
-                                  ? Center(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          const Icon(
-                                            Icons.receipt_long,
-                                            size: 48,
-                                            color: Colors.grey,
-                                          ),
-                                          const SizedBox(height: 16),
-                                          const Text(
-                                            'No Transaction History',
-                                            style: TextStyle(
-                                              color: Colors.grey,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Add transactions for this customer to see them here.',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Colors.grey.shade600,
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    )
-                                  : _buildTransactionsList(
-                                      transactionSnapshot.data!.docs,
-                                      isMobile,
-                                    ),
-                    ),
-                  ],
+                      SizedBox(height: spacing),
+                      if (transactionSnapshot.hasData && transactionSnapshot.data!.docs.isNotEmpty)
+                        _buildTransactionsList(
+                          transactionSnapshot.data!.docs,
+                          isMobile,
+                        )
+                      else
+                        Center(
+                          child: Text(
+                            'No transactions found',
+                            style: TextStyle(
+                              color: Colors.grey.shade600,
+                              fontSize: isMobile ? 14.0 : 16.0,
+                            ),
+                          ),
+                        ),
+                      SizedBox(height: spacing), // Add bottom padding
+                    ],
+                  ),
                 );
               },
             );
@@ -842,74 +811,124 @@ class CustomerDetailsPage extends StatelessWidget {
   }
 
   Widget _buildTransactionsList(List<DocumentSnapshot> transactions, bool isMobile) {
-    // Sort transactions by date in the app instead of in the query
-    transactions.sort((a, b) {
-      final aDate =
-          (a.data() as Map<String, dynamic>)['date'] as Timestamp;
-      final bDate =
-          (b.data() as Map<String, dynamic>)['date'] as Timestamp;
-      return bDate.compareTo(
-        aDate,
-      ); // Descending order (newest first)
-    });
+    return Column(
+      children: List.generate(
+        transactions.length,
+        (index) {
+          final transaction = transactions[index].data() as Map<String, dynamic>;
+          final date = (transaction['date'] as Timestamp).toDate();
+          final amountPaid = transaction['amount_paid']?.toDouble() ?? 0.0;
+          final amountTaken = transaction['amount_taken']?.toDouble() ?? 0.0;
+          final newBalance = transaction['new_balance']?.toDouble() ?? 0.0;
+          final previousBalance = transaction['previous_balance']?.toDouble() ?? 0.0;
 
-    return ListView.builder(
-      itemCount: transactions.length,
-      itemBuilder: (context, index) {
-        final transaction =
-            transactions[index].data() as Map<String, dynamic>;
-        final date =
-            (transaction['date'] as Timestamp).toDate();
-        return Card(
-          margin: EdgeInsets.symmetric(
-            vertical: isMobile ? 4.0 : 8.0,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: ListTile(
-            contentPadding: EdgeInsets.all(
-              isMobile ? 12.0 : 16.0,
+          return Card(
+            margin: EdgeInsets.symmetric(
+              vertical: isMobile ? 8.0 : 12.0,
             ),
-            title: Text(
-              'Date: ${DateFormat('dd/MM/yyyy').format(date)}',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: isMobile ? 14.0 : 16.0,
-              ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
             ),
-            subtitle: Column(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                SizedBox(height: isMobile ? 4.0 : 8.0),
-                Text(
-                  'Amount Paid: ${transaction['amount_paid']}',
-                  style: TextStyle(
-                    fontSize: isMobile ? 12.0 : 14.0,
+                Container(
+                  padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(10),
+                      topRight: Radius.circular(10),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Text(
+                        'Transaction #${transactions.length - index}',
+                        style: TextStyle(
+                          fontSize: isMobile ? 16.0 : 18.0,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                      const Spacer(),
+                      Text(
+                        DateFormat('dd/MM/yyyy').format(date),
+                        style: TextStyle(
+                          fontSize: isMobile ? 14.0 : 16.0,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                Text(
-                  'Amount Taken: ${transaction['amount_taken']}',
-                  style: TextStyle(
-                    fontSize: isMobile ? 12.0 : 14.0,
-                  ),
-                ),
-                Text(
-                  'New Balance: ${transaction['new_balance']}',
-                  style: TextStyle(
-                    fontSize: isMobile ? 12.0 : 14.0,
-                    fontWeight: FontWeight.bold,
-                    color:
-                        transaction['new_balance'] >= 0
-                            ? Colors.green
-                            : Colors.red,
+                Padding(
+                  padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildTransactionRow(
+                        'Previous Balance',
+                        'Rs. ${previousBalance.toStringAsFixed(2)}',
+                        Colors.grey.shade700,
+                        isMobile,
+                      ),
+                      SizedBox(height: isMobile ? 8.0 : 12.0),
+                      _buildTransactionRow(
+                        'Amount Paid',
+                        'Rs. ${amountPaid.toStringAsFixed(2)}',
+                        Colors.green,
+                        isMobile,
+                      ),
+                      SizedBox(height: isMobile ? 8.0 : 12.0),
+                      _buildTransactionRow(
+                        'Amount Taken',
+                        'Rs. ${amountTaken.toStringAsFixed(2)}',
+                        Colors.red,
+                        isMobile,
+                      ),
+                      SizedBox(height: isMobile ? 8.0 : 12.0),
+                      Divider(color: Colors.grey.shade300),
+                      SizedBox(height: isMobile ? 8.0 : 12.0),
+                      _buildTransactionRow(
+                        'New Balance',
+                        'Rs. ${newBalance.toStringAsFixed(2)}',
+                        newBalance >= 0 ? Colors.green : Colors.red,
+                        isMobile,
+                        isBold: true,
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildTransactionRow(String label, String value, Color valueColor, bool isMobile, {bool isBold = false}) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: isMobile ? 14.0 : 16.0,
+            color: Colors.grey.shade700,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
           ),
-        );
-      },
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isMobile ? 14.0 : 16.0,
+            color: valueColor,
+            fontWeight: isBold ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
+      ],
     );
   }
 }
