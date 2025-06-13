@@ -6,6 +6,7 @@ import 'customer_tab.dart';
 import 'dash_board_tab.dart';
 import 'data_entry_tab.dart';
 import 'export_data.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -257,6 +258,24 @@ class _HomePageState extends State<HomePage> {
                   fontWeight: FontWeight.bold,
                   letterSpacing: 0.5,
                 ),
+              ),
+              SizedBox(height: 10),
+              FutureBuilder<String?>(
+                future: SharedPreferences.getInstance().then((prefs) => prefs.getString('user_role')),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && snapshot.data != null) {
+                    return Text(
+                      'Logged in as ${snapshot.data!}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    );
+                  }
+                  return const SizedBox.shrink();
+                },
               ),
             ],
           ),

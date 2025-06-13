@@ -22,6 +22,7 @@ class _PasswordScreenState extends State<PasswordScreen> {
   bool _isError = false;
   String _errorMessage = '';
   String? _correctPassword;
+  String? _correctPassword2;
   bool _obscurePassword = true;
 
   @override
@@ -71,12 +72,14 @@ class _PasswordScreenState extends State<PasswordScreen> {
 
       final data = snapshot.data();
       _correctPassword = data?['password'] as String?;
+      _correctPassword2 = data?['password2'] as String?;
 
-      if (_correctPassword == null || _correctPassword!.isEmpty) {
+      if ((_correctPassword == null || _correctPassword!.isEmpty) &&
+          (_correctPassword2 == null || _correctPassword2!.isEmpty)) {
         setState(() {
           _isLoading = false;
           _isError = true;
-          _errorMessage = 'Password not configured. Please contact the administrator.';
+          _errorMessage = 'Passwords not configured. Please contact the administrator.';
         });
         return;
       }
@@ -110,9 +113,11 @@ class _PasswordScreenState extends State<PasswordScreen> {
     });
 
     try {
-      if (enteredPassword == _correctPassword) {
+      if (enteredPassword == _correctPassword || enteredPassword == _correctPassword2) {
         final prefs = await SharedPreferences.getInstance();
         await prefs.setBool('is_authenticated', true);
+        // Store user role
+        await prefs.setString('user_role', enteredPassword == _correctPassword ? 'Admin' : 'User');
 
         if (mounted) {
           Navigator.of(context).pushReplacement(
