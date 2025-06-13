@@ -9,6 +9,7 @@ import 'export_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:html' as html;
 import 'dart:async';
+import 'package:google_fonts/google_fonts.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -116,11 +117,13 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           child: ClipRRect(
             borderRadius: const BorderRadius.all(Radius.circular(15)),
             child: AppBar(
-              title: const Text(
+              title: Text(
                 'AL QAIM PETROLEUM',
-                style: TextStyle(
+                style: GoogleFonts.lato(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 24,
+                  letterSpacing: 1.2,
                 ),
               ),
               centerTitle: true,
@@ -249,53 +252,35 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
           ),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                height: 70,
-                width: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black,
-                      blurRadius: 8,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Icon(
-                    Icons.local_gas_station,
-                    color: Colors.green.shade900,
-                    size: 40,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              const Text(
+              Text(
                 'AL QAIM PETROLEUM',
-                style: TextStyle(
+                style: GoogleFonts.lato(
                   color: Colors.white,
-                  fontSize: 18,
+                  fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 0.5,
                 ),
               ),
-              SizedBox(height: 10),
+              const SizedBox(height: 8),
+              Text(
+                'Logged in as ',
+                style: GoogleFonts.lato(
+                  color: Colors.white70,
+                  fontSize: 16,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
               FutureBuilder<String?>(
                 future: SharedPreferences.getInstance().then((prefs) => prefs.getString('user_role')),
                 builder: (context, snapshot) {
                   if (snapshot.hasData && snapshot.data != null) {
                     return Text(
-                      'Logged in as ${snapshot.data!}',
-                      style: const TextStyle(
+                      snapshot.data!,
+                      style: GoogleFonts.lato(
                         color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                      textAlign: TextAlign.center,
                     );
                   }
                   return const SizedBox.shrink();
@@ -304,32 +289,87 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ],
           ),
         ),
-        _buildPanelItem(0, Icons.dashboard, 'Dashboard'),
-        _buildPanelItem(1, Icons.info, 'Add Data'),
-        _buildPanelItem(2, Icons.people, 'Customers'),
-        _buildPanelItem(3, Icons.file_download, 'Export'),
-      ],
-    );
-  }
-
-  Widget _buildPanelItem(int index, IconData icon, String title) {
-    return ListTile(
-      leading: Icon(icon, color: Colors.white, size: 24),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: _selectedIndex == index ? FontWeight.bold : FontWeight.normal,
+        ListTile(
+          leading: const Icon(Icons.dashboard, color: Colors.white),
+          title: Text(
+            'Dashboard',
+            style: GoogleFonts.lato(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          selected: _selectedIndex == 0,
+          onTap: () {
+            setState(() {
+              _selectedIndex = 0;
+            });
+            if (MediaQuery.of(context).size.width < 600) {
+              Navigator.pop(context);
+            }
+          },
         ),
-      ),
-      selected: _selectedIndex == index,
-      selectedColor: Colors.white,
-      onTap: () {
-        setState(() => _selectedIndex = index);
-        if (MediaQuery.of(context).size.width < 600) {
-          Navigator.pop(context);
-        }
-      },
+        ListTile(
+          leading: const Icon(Icons.add_chart, color: Colors.white),
+          title: Text(
+            'Add Data',
+            style: GoogleFonts.lato(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          selected: _selectedIndex == 1,
+          onTap: () {
+            setState(() {
+              _selectedIndex = 1;
+            });
+            if (MediaQuery.of(context).size.width < 600) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.people, color: Colors.white),
+          title: Text(
+            'Customers',
+            style: GoogleFonts.lato(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          selected: _selectedIndex == 2,
+          onTap: () {
+            setState(() {
+              _selectedIndex = 2;
+            });
+            if (MediaQuery.of(context).size.width < 600) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.file_download, color: Colors.white),
+          title: Text(
+            'Export',
+            style: GoogleFonts.lato(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          selected: _selectedIndex == 3,
+          onTap: () {
+            setState(() {
+              _selectedIndex = 3;
+            });
+            if (MediaQuery.of(context).size.width < 600) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+      ],
     );
   }
 
