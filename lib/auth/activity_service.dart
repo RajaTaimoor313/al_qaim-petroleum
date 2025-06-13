@@ -1,8 +1,4 @@
-import 'dart:async';
-import 'package:al_qaim/home_page.dart';
 import 'package:flutter/material.dart';
-import 'auth_service.dart';
-import 'password_screen.dart';
 
 class ActivityService {
   static final ActivityService _instance = ActivityService._internal();
