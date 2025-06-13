@@ -521,7 +521,11 @@ class _CustomersState extends State<Customers> {
             .collection('customers')
             .doc(docId);
 
-        await docRef.set({
+        // Create a batch write to ensure atomicity
+        final batch = FirebaseFirestore.instance.batch();
+        
+        // Add the customer document
+        batch.set(docRef, {
           'name': name,
           'name_lower': name.toLowerCase(),
           'phone': phone,
@@ -530,6 +534,25 @@ class _CustomersState extends State<Customers> {
           'page_number': pageNumber,
           'created_at': FieldValue.serverTimestamp(),
         });
+
+        // Add an initial transaction record if there's a previous balance
+        final initialBalance = double.parse(balanceController.text.trim());
+        if (initialBalance > 0) {
+          final transactionRef = FirebaseFirestore.instance.collection('transactions').doc();
+          batch.set(transactionRef, {
+            'customer_id': docId,
+            'customer_name': name,
+            'phone': phone,
+            'previous_balance': initialBalance,
+            'amount_taken': 0.0,
+            'amount_paid': 0.0,
+            'new_balance': initialBalance,
+            'date': FieldValue.serverTimestamp(),
+          });
+        }
+
+        // Commit the batch
+        await batch.commit();
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

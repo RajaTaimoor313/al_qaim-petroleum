@@ -59,6 +59,7 @@ class _DashboardState extends State<Dashboard> {
           ),
     );
     if (picked != null && picked != selectedDate) {
+      if (!mounted) return;
       setState(() {
         selectedDate = picked;
         isLoading = true;
@@ -70,6 +71,7 @@ class _DashboardState extends State<Dashboard> {
 
   Future<void> _fetchDashboardData() async {
     try {
+      if (!mounted) return;
       setState(() {
         isLoading = true;
         hasError = false;
@@ -113,6 +115,8 @@ class _DashboardState extends State<Dashboard> {
         customersQuery,
         salesQuery,
       ]);
+
+      if (!mounted) return;
 
       final transactionsSnapshot = results[0];
       final customersSnapshot = results[1];
@@ -187,6 +191,8 @@ class _DashboardState extends State<Dashboard> {
 
       final List<MonthlyData> chartData = await _fetchChartData();
 
+      if (!mounted) return;
+
       setState(() {
         totalCredits = dailyCredits;
         totalRecovery = dailyRecovery;
@@ -199,6 +205,7 @@ class _DashboardState extends State<Dashboard> {
         isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         isLoading = false;
         hasError = true;

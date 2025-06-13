@@ -306,7 +306,6 @@ class _AddDataState extends State<AddData> {
                         try {
                           // Prevent multiple submissions by checking if already processing
                           if (isSearching) {
-                            print("Submission already in progress");
                             return;
                           }
 
@@ -315,7 +314,6 @@ class _AddDataState extends State<AddData> {
                               selectedCustomerId == null ||
                               amountPaidController.text.trim().isEmpty ||
                               amountTakenController.text.trim().isEmpty) {
-                            print("Button pressed but form is not ready");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
@@ -335,7 +333,6 @@ class _AddDataState extends State<AddData> {
                                     amountTakenController.text.trim(),
                                   ) ==
                                   null) {
-                            print("Invalid number format in amount fields");
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content: Text(
@@ -347,10 +344,8 @@ class _AddDataState extends State<AddData> {
                             return;
                           }
 
-                          print("Button pressed, form is ready");
                           await _submitTransaction();
                         } catch (e) {
-                          print("Error triggering form submission: $e");
                           if (mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
@@ -800,7 +795,6 @@ class _AddDataState extends State<AddData> {
       customerSuggestions = [];
       errorMessage = null;
     });
-    print('Form reset completed');
   }
 
   Widget _buildCustomerSearch() {
@@ -887,7 +881,6 @@ class _AddDataState extends State<AddData> {
 
   void _fetchCustomerSuggestions(String query) async {
     try {
-      print('Fetching customer suggestions for query: $query');
       final snapshot =
           await FirebaseFirestore.instance
               .collection('customers')
@@ -897,7 +890,6 @@ class _AddDataState extends State<AddData> {
                 isLessThanOrEqualTo: '${query.toLowerCase()}\uf8ff',
               )
               .get();
-      print('Customer suggestions fetched: ${snapshot.docs.length} results');
 
       setState(() {
         isSearching = false;
@@ -919,7 +911,6 @@ class _AddDataState extends State<AddData> {
         }
       });
     } catch (e) {
-      print('Error in _fetchCustomerSuggestions: $e');
       setState(() {
         isSearching = false;
         errorMessage =
@@ -930,10 +921,6 @@ class _AddDataState extends State<AddData> {
 
   void _selectCustomer(Map<String, dynamic> customer) {
     try {
-      print(
-        'Selecting customer: ${customer['name']}, balance: ${customer['balance']}',
-      );
-
       // Format balance properly
       String formattedBalance = '0';
       if (customer['balance'] != null) {
@@ -966,12 +953,7 @@ class _AddDataState extends State<AddData> {
           amountTakenController.text = '0';
         }
       });
-
-      print(
-        'Customer selected successfully, customerFound: $customerFound, ID: $selectedCustomerId',
-      );
     } catch (e) {
-      print('Error in _selectCustomer: $e');
       setState(() {
         errorMessage = 'Error selecting customer: $e';
       });
