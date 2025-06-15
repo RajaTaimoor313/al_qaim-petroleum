@@ -94,8 +94,8 @@ class _DashboardState extends State<Dashboard> {
 
       final transactionsQuery =
           FirebaseFirestore.instance.collection('transactions')
-            .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-            .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+            .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+            .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
             .limit(100)
             .get();
             
@@ -105,8 +105,8 @@ class _DashboardState extends State<Dashboard> {
             .get();
             
       final salesQuery = FirebaseFirestore.instance.collection('sales')
-            .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-            .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+            .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+            .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
             .limit(100)
             .get();
 
@@ -126,70 +126,38 @@ class _DashboardState extends State<Dashboard> {
       double dailyRecovery = 0;
       List<Map<String, dynamic>> filteredTransactions = [];
 
+      // Process transactions
       for (var doc in transactionsSnapshot.docs) {
         final data = doc.data();
-        final amountTaken =
-            data['amount_taken'] is num
-                ? (data['amount_taken'] as num).toDouble()
-                : 0.0;
-        final amountPaid =
-            data['amount_paid'] is num
-                ? (data['amount_paid'] as num).toDouble()
-                : 0.0;
-        final customerName = data['customer_name'] ?? 'Unknown';
-        final transactionDate = data['date'] as Timestamp?;
-
-        filteredTransactions.add({
-          'id': doc.id,
-          'customer_name': customerName,
-          'amount_taken': amountTaken,
-          'amount_paid': amountPaid,
-          'date': transactionDate?.toDate() ?? DateTime.now(),
-        });
-
+        final amountPaid = data['amount_paid'] is num ? (data['amount_paid'] as num).toDouble() : 0.0;
+        final amountTaken = data['amount_taken'] is num ? (data['amount_taken'] as num).toDouble() : 0.0;
+        
         dailyCredits += amountTaken;
         dailyRecovery += amountPaid;
+        
+        filteredTransactions.add(data);
       }
 
-      double totalReceivable = 0;
-      for (var doc in customersSnapshot.docs) {
-        final data = doc.data();
-        final balance =
-            data['balance'] is num ? (data['balance'] as num).toDouble() : 0.0;
-        totalReceivable += balance;
-      }
-
-      double dailyPetrolLitres = 0;
-      double dailyPetrolRupees = 0;
-      double dailyDieselLitres = 0;
-      double dailyDieselRupees = 0;
+      // Process sales data
+      double totalPetrolLitres = 0;
+      double totalPetrolRupees = 0;
+      double totalDieselLitres = 0;
+      double totalDieselRupees = 0;
 
       for (var doc in salesSnapshot.docs) {
         final data = doc.data();
-        final petrolLitres =
-            data['petrol_litres'] is num
-                ? (data['petrol_litres'] as num).toDouble()
-                : 0.0;
-        final petrolRupees =
-            data['petrol_rupees'] is num
-                ? (data['petrol_rupees'] as num).toDouble()
-                : 0.0;
-        final dieselLitres =
-            data['diesel_litres'] is num
-                ? (data['diesel_litres'] as num).toDouble()
-                : 0.0;
-        final dieselRupees =
-            data['diesel_rupees'] is num
-                ? (data['diesel_rupees'] as num).toDouble()
-                : 0.0;
-
-        dailyPetrolLitres += petrolLitres;
-        dailyPetrolRupees += petrolRupees;
-        dailyDieselLitres += dieselLitres;
-        dailyDieselRupees += dieselRupees;
+        totalPetrolLitres += data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+        totalPetrolRupees += data['petrol_rupees'] is num ? (data['petrol_rupees'] as num).toDouble() : 0.0;
+        totalDieselLitres += data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+        totalDieselRupees += data['diesel_rupees'] is num ? (data['diesel_rupees'] as num).toDouble() : 0.0;
       }
 
-      final List<MonthlyData> chartData = await _fetchChartData();
+      // Calculate total receivable amount from customers
+      double totalReceivable = 0;
+      for (var doc in customersSnapshot.docs) {
+        final data = doc.data();
+        totalReceivable += data['balance'] is num ? (data['balance'] as num).toDouble() : 0.0;
+      }
 
       if (!mounted) return;
 
@@ -197,20 +165,21 @@ class _DashboardState extends State<Dashboard> {
         totalCredits = dailyCredits;
         totalRecovery = dailyRecovery;
         receivableAmount = totalReceivable;
-        petrolLitres = dailyPetrolLitres;
-        petrolRupees = dailyPetrolRupees;
-        dieselLitres = dailyDieselLitres;
-        dieselRupees = dailyDieselRupees;
-        monthlyData = chartData;
+        petrolLitres = totalPetrolLitres;
+        petrolRupees = totalPetrolRupees;
+        dieselLitres = totalDieselLitres;
+        dieselRupees = totalDieselRupees;
         isLoading = false;
       });
+
+      // Fetch chart data
+      await _fetchChartDataOnly();
     } catch (e) {
       if (!mounted) return;
       setState(() {
         isLoading = false;
         hasError = true;
-        errorMessage =
-            'Failed to load dashboard data: ${e.toString().split('\n')[0]}';
+        errorMessage = 'Error loading dashboard data: ${e.toString().split('\n')[0]}';
       });
     }
   }
@@ -242,9 +211,9 @@ class _DashboardState extends State<Dashboard> {
           // Use server-side filtering and limit
           final allSalesSnapshot = await FirebaseFirestore.instance
               .collection('sales')
-              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
-              .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
-              .orderBy('date')
+              .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+              .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+              .orderBy('custom_date')
               .limit(200)
               .get();
               
@@ -335,9 +304,9 @@ class _DashboardState extends State<Dashboard> {
           
           final allSalesSnapshot = await FirebaseFirestore.instance
               .collection('sales')
-              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
-              .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
-              .orderBy('date')
+              .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+              .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+              .orderBy('custom_date')
               .limit(500)
               .get();
               
@@ -427,9 +396,9 @@ class _DashboardState extends State<Dashboard> {
           
           final allSalesSnapshot = await FirebaseFirestore.instance
               .collection('sales')
-              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
-              .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
-              .orderBy('date')
+              .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+              .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+              .orderBy('custom_date')
               .limit(1000)
               .get();
               
@@ -502,9 +471,9 @@ class _DashboardState extends State<Dashboard> {
           
           final allSalesSnapshot = await FirebaseFirestore.instance
               .collection('sales')
-              .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
-              .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
-              .orderBy('date')
+              .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+              .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+              .orderBy('custom_date')
               .limit(2000)
               .get();
               

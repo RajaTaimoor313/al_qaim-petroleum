@@ -101,42 +101,38 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       key: _scaffoldKey,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(kToolbarHeight + 10),
-        child: Container(
-          padding: const EdgeInsets.only(top: 10),
-          child: ClipRRect(
-            borderRadius: const BorderRadius.all(Radius.circular(15)),
-            child: AppBar(
-              title: Text(
-                'AL QAIM PETROLEUM',
-                style: GoogleFonts.lato(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 24,
-                  letterSpacing: 1.2,
-                ),
+        child: ClipRRect(
+          child: AppBar(
+            title: Text(
+              'AL QAIM PETROLEUM',
+              style: GoogleFonts.lato(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 24,
+                letterSpacing: 1.2,
               ),
-              centerTitle: true,
-              backgroundColor: Colors.transparent,
-              leading: isMobile
-                ? IconButton(
-                    icon: const Icon(Icons.menu, color: Colors.white),
-                    onPressed: _toggleDrawer,
-                  )
-                : null,
-              actions: [
-                IconButton(
-                  icon: const Icon(Icons.logout, color: Colors.white),
-                  onPressed: _logout,
-                  tooltip: 'Logout',
-                ),
-              ],
-              flexibleSpace: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.green, Colors.green],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+            ),
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            leading: isMobile
+              ? IconButton(
+                  icon: const Icon(Icons.menu, color: Colors.white),
+                  onPressed: _toggleDrawer,
+                )
+              : null,
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.logout, color: Colors.white),
+                onPressed: _logout,
+                tooltip: 'Logout',
+              ),
+            ],
+            flexibleSpace: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.green, Colors.green],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
                 ),
               ),
             ),

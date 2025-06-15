@@ -223,11 +223,11 @@ class _ExportDataState extends State<ExportData> {
         'Name', 'Phone', 'CNIC', 'Page Number', 'Balance', 'Created Date',
       ];
       final transactionHeaders = [
-        'Date', 'Customer Name', 'Phone', 'Previous Balance',
+        'Date', 'Custom Date', 'Customer Name', 'Phone', 'Previous Balance',
         'Amount Paid', 'Amount Taken', 'New Balance',
       ];
       final salesHeaders = [
-        'Date', 'Petrol Litres', 'Petrol Amount (Rs)', 'Diesel Litres',
+        'Date', 'Custom Date', 'Petrol Litres', 'Petrol Amount (Rs)', 'Diesel Litres',
         'Diesel Amount (Rs)', 'Total Litres', 'Total Amount (Rs)',
       ];
 
@@ -379,6 +379,9 @@ class _ExportDataState extends State<ExportData> {
           data['date'] != null
               ? DateFormat('dd/MM/yyyy').format((data['date'] as Timestamp).toDate())
               : 'N/A',
+          data['custom_date'] != null
+              ? DateFormat('dd/MM/yyyy').format((data['custom_date'] as Timestamp).toDate())
+              : 'N/A',
           data['customer_name'] ?? '',
           data['phone'] ?? '',
           data['previous_balance']?.toString() ?? '0.0',
@@ -419,6 +422,9 @@ class _ExportDataState extends State<ExportData> {
         final rowData = [
           data['date'] != null
               ? DateFormat('dd/MM/yyyy').format((data['date'] as Timestamp).toDate())
+              : 'N/A',
+          data['custom_date'] != null
+              ? DateFormat('dd/MM/yyyy').format((data['custom_date'] as Timestamp).toDate())
               : 'N/A',
           petrolLitres,
           data['petrol_rupees']?.toString() ?? '0.0',

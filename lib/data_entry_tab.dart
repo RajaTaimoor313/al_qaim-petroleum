@@ -46,30 +46,19 @@ class _AddDataState extends State<AddData> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isMobile = MediaQuery.of(context).size.width < 600;
-    final double horizontalPadding = isMobile ? 12.0 : 16.0;
-    final double verticalPadding = isMobile ? 12.0 : 16.0;
-    final double borderRadius = isMobile ? 12.0 : 15.0;
-    final double fontSize = isMobile ? 20.0 : 24.0;
-    final double spacing = isMobile ? 12.0 : 16.0;
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final spacing = isMobile ? 12.0 : 20.0;
+    final fontSize = isMobile ? 18.0 : 22.0;
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(borderRadius),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            spreadRadius: 1,
-            blurRadius: 5,
-          ),
-        ],
-      ),
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
       child: SingleChildScrollView(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+          left: 16,
+          right: 16,
+          top: 16,
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -78,7 +67,6 @@ class _AddDataState extends State<AddData> {
               style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: spacing),
-
             // Form type selector
             Row(
               children: [
@@ -93,9 +81,7 @@ class _AddDataState extends State<AddData> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          showTransactionForm
-                              ? Colors.green
-                              : Colors.grey.shade300,
+                          showTransactionForm ? Colors.green : Colors.grey.shade300,
                       foregroundColor:
                           showTransactionForm ? Colors.white : Colors.black,
                       shape: RoundedRectangleBorder(
@@ -118,9 +104,7 @@ class _AddDataState extends State<AddData> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          !showTransactionForm
-                              ? Colors.green
-                              : Colors.grey.shade300,
+                          !showTransactionForm ? Colors.green : Colors.grey.shade300,
                       foregroundColor:
                           !showTransactionForm ? Colors.white : Colors.black,
                       shape: RoundedRectangleBorder(
@@ -134,7 +118,6 @@ class _AddDataState extends State<AddData> {
               ],
             ),
             SizedBox(height: spacing + 4),
-
             // Show the appropriate form
             showTransactionForm
                 ? _buildTransactionForm(spacing, isMobile)
@@ -184,6 +167,8 @@ class _AddDataState extends State<AddData> {
             keyboardType: TextInputType.phone,
             validator:
                 (value) => value!.isEmpty ? 'Please enter phone number' : null,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
           SizedBox(height: spacing),
           TextFormField(
@@ -199,6 +184,8 @@ class _AddDataState extends State<AddData> {
             ),
             keyboardType: TextInputType.number,
             readOnly: true,
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
           SizedBox(height: spacing),
           TextFormField(
@@ -220,6 +207,8 @@ class _AddDataState extends State<AddData> {
                         : (double.tryParse(value) != null
                             ? null
                             : 'Invalid number'),
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
           SizedBox(height: spacing),
           InkWell(
@@ -267,6 +256,8 @@ class _AddDataState extends State<AddData> {
               }
               return null;
             },
+            textInputAction: TextInputAction.next,
+            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
           SizedBox(height: spacing),
           TextFormField(
@@ -293,6 +284,8 @@ class _AddDataState extends State<AddData> {
               }
               return null;
             },
+            textInputAction: TextInputAction.done,
+            onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
           ),
           SizedBox(height: spacing + 8),
           SizedBox(
@@ -504,6 +497,8 @@ class _AddDataState extends State<AddData> {
                           if (amount < 0) return 'Must be positive';
                           return null;
                         },
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
                       ),
                     ),
                     SizedBox(width: spacing),
@@ -526,6 +521,8 @@ class _AddDataState extends State<AddData> {
                           if (amount < 0) return 'Must be positive';
                           return null;
                         },
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
                       ),
                     ),
                   ],
@@ -583,6 +580,8 @@ class _AddDataState extends State<AddData> {
                           if (amount < 0) return 'Must be positive';
                           return null;
                         },
+                        textInputAction: TextInputAction.next,
+                        onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
                       ),
                     ),
                     SizedBox(width: spacing),
@@ -605,6 +604,8 @@ class _AddDataState extends State<AddData> {
                           if (amount < 0) return 'Must be positive';
                           return null;
                         },
+                        textInputAction: TextInputAction.done,
+                        onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
                       ),
                     ),
                   ],
@@ -737,22 +738,23 @@ class _AddDataState extends State<AddData> {
         if (confirm == true) {
           // Proceed with saving the sales data
           await FirebaseFirestore.instance.collection('sales').add({
-        'petrol_litres': petrolLitres,
-        'petrol_rupees': petrolRupees,
-        'diesel_litres': dieselLitres,
-        'diesel_rupees': dieselRupees,
+            'petrol_litres': petrolLitres,
+            'petrol_rupees': petrolRupees,
+            'diesel_litres': dieselLitres,
+            'diesel_rupees': dieselRupees,
             'total_amount': totalAmount,
             'date': Timestamp.now(),
+            'custom_date': Timestamp.fromDate(selectedDate),
           });
 
-      // Show success message
+          // Show success message
           if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Sales data saved successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Sales data saved successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
           }
 
           // Clear form
@@ -762,14 +764,14 @@ class _AddDataState extends State<AddData> {
           dieselLitresController.clear();
           dieselRupeesController.clear();
         }
-    } catch (e) {
+      } catch (e) {
         if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
               content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
-        ),
-      );
+              backgroundColor: Colors.red,
+            ),
+          );
         }
       }
     }
@@ -987,10 +989,10 @@ class _AddDataState extends State<AddData> {
       try {
         final customerName = customerNameController.text.trim();
         final phone = phoneController.text.trim();
-        final amountPaid = double.tryParse(amountPaidController.text) ?? 0.0;
-        final amountTaken = double.tryParse(amountTakenController.text) ?? 0.0;
-        final previousBalance = double.tryParse(balanceController.text) ?? 0.0;
-        final newBalance = previousBalance + amountTaken - amountPaid;
+        final previousBalance = double.parse(balanceController.text.trim());
+        final amountPaid = double.parse(amountPaidController.text.trim());
+        final amountTaken = double.parse(amountTakenController.text.trim());
+        final newBalance = previousBalance - amountPaid + amountTaken;
 
         // Show confirmation dialog
         final bool? confirm = await showDialog<bool>(
@@ -1027,52 +1029,44 @@ class _AddDataState extends State<AddData> {
         if (confirm == true) {
           // Proceed with saving the transaction
           await FirebaseFirestore.instance.collection('transactions').add({
-          'customer_id': selectedCustomerId,
+            'customer_id': selectedCustomerId,
             'customer_name': customerName,
             'phone': phone,
-          'previous_balance': previousBalance,
-          'amount_paid': amountPaid,
-          'amount_taken': amountTaken,
-          'new_balance': newBalance,
+            'previous_balance': previousBalance,
+            'amount_paid': amountPaid,
+            'amount_taken': amountTaken,
+            'new_balance': newBalance,
             'date': Timestamp.now(),
+            'custom_date': Timestamp.fromDate(selectedDate),
           });
 
           // Update customer balance
           if (selectedCustomerId != null) {
-        await FirebaseFirestore.instance
-            .collection('customers')
-            .doc(selectedCustomerId)
-            .update({'balance': newBalance});
-      }
+            await FirebaseFirestore.instance
+                .collection('customers')
+                .doc(selectedCustomerId)
+                .update({'balance': newBalance});
+          }
 
-      // Show success message
+          // Show success message
           if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
                 content: Text('Transaction saved successfully'),
-          backgroundColor: Colors.green,
-        ),
-      );
+                backgroundColor: Colors.green,
+              ),
+            );
           }
 
           // Clear form
-          _formKey.currentState!.reset();
-          customerNameController.clear();
-          phoneController.clear();
-          balanceController.clear();
-          amountPaidController.clear();
-          amountTakenController.clear();
-          setState(() {
-            selectedCustomerId = null;
-            customerFound = false;
-          });
+          _resetForm();
         }
       } catch (e) {
         if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
               content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
+              backgroundColor: Colors.red,
             ),
           );
         }
