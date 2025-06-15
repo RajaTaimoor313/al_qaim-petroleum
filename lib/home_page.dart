@@ -7,7 +7,6 @@ import 'dash_board_tab.dart';
 import 'data_entry_tab.dart';
 import 'export_data.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:html' as html;
 import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -23,20 +22,11 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   final AuthService _authService = AuthService();
   final ActivityService _activityService = ActivityService();
-  StreamSubscription? _visibilitySubscription;
-
   @override
   void initState() {
     super.initState();
     _activityService.startActivityTimer(context);
     WidgetsBinding.instance.addObserver(this);
-    _setupVisibilityListener();
-  }
-
-  void _setupVisibilityListener() {
-    _visibilitySubscription = html.window.onBeforeUnload.listen((event) {
-      _handleAppClose();
-    });
   }
 
   Future<void> _handleAppClose() async {
@@ -56,7 +46,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _visibilitySubscription?.cancel();
     _activityService.stopTimer();
     super.dispose();
   }

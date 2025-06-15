@@ -87,17 +87,16 @@ class _ExportDataState extends State<ExportData> {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      icon:
-                          isExporting
-                              ? SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2,
-                                ),
-                              )
-                              : const Icon(Icons.download),
+                      icon: isExporting
+                          ? SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
+                            )
+                          : const Icon(Icons.download),
                       label: Text(
                         isExporting ? 'Exporting...' : 'Export to Excel',
                         style: TextStyle(
@@ -134,10 +133,7 @@ class _ExportDataState extends State<ExportData> {
                     child: Text(
                       statusMessage,
                       style: TextStyle(
-                        color:
-                            hasError
-                                ? Colors.red.shade700
-                                : Colors.green.shade700,
+                        color: hasError ? Colors.red.shade700 : Colors.green.shade700,
                       ),
                     ),
                   ),
@@ -197,6 +193,7 @@ class _ExportDataState extends State<ExportData> {
   }
 
   Future<void> _exportDataToExcel() async {
+    if (isExporting) return;
     setState(() {
       isExporting = true;
       statusMessage = 'Exporting data, please wait...';
@@ -208,14 +205,13 @@ class _ExportDataState extends State<ExportData> {
       final excelFile = excel.Excel.createExcel();
 
       // Excel.createExcel() automatically creates Sheet1
-      // Use the existing Sheet1 to create our custom sheets
       if (excelFile.sheets.containsKey('Sheet1')) {
         // Create custom sheets by copying Sheet1
         excelFile.copy('Sheet1', 'Customers');
         excelFile.copy('Sheet1', 'Transactions');
         excelFile.copy('Sheet1', 'Sales');
 
-        // Now we can delete the original Sheet1
+        // Delete the original Sheet1
         excelFile.delete('Sheet1');
       }
 
@@ -224,30 +220,15 @@ class _ExportDataState extends State<ExportData> {
       final salesSheet = excelFile['Sales'];
 
       final customerHeaders = [
-        'Name',
-        'Phone',
-        'CNIC',
-        'Page Number',
-        'Balance',
-        'Created Date',
+        'Name', 'Phone', 'CNIC', 'Page Number', 'Balance', 'Created Date',
       ];
       final transactionHeaders = [
-        'Date',
-        'Customer Name',
-        'Phone',
-        'Previous Balance',
-        'Amount Paid',
-        'Amount Taken',
-        'New Balance',
+        'Date', 'Customer Name', 'Phone', 'Previous Balance',
+        'Amount Paid', 'Amount Taken', 'New Balance',
       ];
       final salesHeaders = [
-        'Date',
-        'Petrol Litres',
-        'Petrol Amount (Rs)',
-        'Diesel Litres',
-        'Diesel Amount (Rs)',
-        'Total Litres',
-        'Total Amount (Rs)',
+        'Date', 'Petrol Litres', 'Petrol Amount (Rs)', 'Diesel Litres',
+        'Diesel Amount (Rs)', 'Total Litres', 'Total Amount (Rs)',
       ];
 
       final headerStyle = excel.CellStyle(
@@ -256,230 +237,57 @@ class _ExportDataState extends State<ExportData> {
         horizontalAlign: excel.HorizontalAlign.Center,
       );
 
-      for (var i = 0; i < customerHeaders.length; i++) {
-        final cell = customersSheet.cell(
-          excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
-        );
-        cell.value = excel.TextCellValue(customerHeaders[i]);
-        cell.cellStyle = headerStyle;
-      }
+      // Add headers to all sheets
+      _addHeaders(customersSheet, customerHeaders, headerStyle);
+      _addHeaders(transactionsSheet, transactionHeaders, headerStyle);
+      _addHeaders(salesSheet, salesHeaders, headerStyle);
 
-      for (var i = 0; i < transactionHeaders.length; i++) {
-        final cell = transactionsSheet.cell(
-          excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
-        );
-        cell.value = excel.TextCellValue(transactionHeaders[i]);
-        cell.cellStyle = headerStyle;
-      }
-
-      for (var i = 0; i < salesHeaders.length; i++) {
-        final cell = salesSheet.cell(
-          excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0),
-        );
-        cell.value = excel.TextCellValue(salesHeaders[i]);
-        cell.cellStyle = headerStyle;
-      }
-
-      final Future<QuerySnapshot> customersQuery =
-          FirebaseFirestore.instance.collection('customers')
-            .limit(500)
-            .get();
-      final Future<QuerySnapshot> transactionsQuery =
-          FirebaseFirestore.instance
-              .collection('transactions')
-              .orderBy('date', descending: true)
-              .limit(1000)
-              .get();
-      final Future<QuerySnapshot> salesQuery =
-          FirebaseFirestore.instance
-              .collection('sales')
-              .orderBy('date', descending: true)
-              .limit(1000)
-              .get();
-
-      setState(() {
-        statusMessage = 'Fetching data from database...';
-      });
-
-      final results = await Future.wait([
-        customersQuery,
-        transactionsQuery,
-        salesQuery,
-      ]);
-
-      setState(() {
-        statusMessage = 'Processing data and creating Excel file...';
-      });
-
-      final customersSnapshot = results[0];
-      final transactionsSnapshot = results[1];
-      final salesSnapshot = results[2];
-
-      int customerRow = 1;
-      final int batchSize = 100;
-      final int totalCustomers = customersSnapshot.docs.length;
+      // Fetch data from Firestore
+      setState(() => statusMessage = 'Fetching data from database...');
       
-      for (int i = 0; i < totalCustomers; i += batchSize) {
-        final int end = (i + batchSize < totalCustomers) ? i + batchSize : totalCustomers;
-        final batch = customersSnapshot.docs.sublist(i, end);
-        
-        setState(() {
-          statusMessage = 'Processing customers data (${i + 1}-$end of $totalCustomers)...';
-        });
-        
-        for (var doc in batch) {
-          final data = doc.data() as Map<String, dynamic>;
-          final List<dynamic> rowData = [
-            data['name'] ?? '',
-            data['phone'] ?? '',
-            data['cnic'] ?? '',
-            data['page_number'] ?? '',
-            data['balance'] ?? 0.0,
-            data['created_at'] != null
-                ? DateFormat(
-                  'dd/MM/yyyy',
-                ).format((data['created_at'] as Timestamp).toDate())
-                : 'N/A',
-          ];
+      final customersSnapshot = await FirebaseFirestore.instance
+          .collection('customers').limit(500).get();
+      final transactionsSnapshot = await FirebaseFirestore.instance
+          .collection('transactions')
+          .orderBy('date', descending: true)
+          .limit(1000)
+          .get();
+      final salesSnapshot = await FirebaseFirestore.instance
+          .collection('sales')
+          .orderBy('date', descending: true)
+          .limit(1000)
+          .get();
 
-          for (var i = 0; i < rowData.length; i++) {
-            final cell = customersSheet.cell(
-              excel.CellIndex.indexByColumnRow(
-                columnIndex: i,
-                rowIndex: customerRow,
-              ),
-            );
-            cell.value = excel.TextCellValue(rowData[i].toString());
-          }
-          customerRow++;
-        }
-      }
+      // Process data in batches
+      await _processCustomersData(customersSnapshot, customersSheet);
+      await _processTransactionsData(transactionsSnapshot, transactionsSheet);
+      await _processSalesData(salesSnapshot, salesSheet);
 
-      int transactionRow = 1;
-      final int totalTransactions = transactionsSnapshot.docs.length;
-      
-      for (int i = 0; i < totalTransactions; i += batchSize) {
-        final int end = (i + batchSize < totalTransactions) ? i + batchSize : totalTransactions;
-        final batch = transactionsSnapshot.docs.sublist(i, end);
-        
-        setState(() {
-          statusMessage = 'Processing transactions data (${i + 1}-$end of $totalTransactions)...';
-        });
-        
-        for (var doc in batch) {
-          final data = doc.data() as Map<String, dynamic>;
-          final List<dynamic> rowData = [
-            data['date'] != null
-                ? DateFormat(
-                  'dd/MM/yyyy',
-                ).format((data['date'] as Timestamp).toDate())
-                : 'N/A',
-            data['customer_name'] ?? '',
-            data['phone'] ?? '',
-            data['previous_balance'] ?? 0.0,
-            data['amount_paid'] ?? 0.0,
-            data['amount_taken'] ?? 0.0,
-            data['new_balance'] ?? 0.0,
-          ];
-
-          for (var i = 0; i < rowData.length; i++) {
-            final cell = transactionsSheet.cell(
-              excel.CellIndex.indexByColumnRow(
-                columnIndex: i,
-                rowIndex: transactionRow,
-              ),
-            );
-            cell.value = excel.TextCellValue(rowData[i].toString());
-          }
-          transactionRow++;
-        }
-      }
-
-      // Process sales in batches
-      int salesRow = 1;
-      final int totalSales = salesSnapshot.docs.length;
-      
-      for (int i = 0; i < totalSales; i += batchSize) {
-        final int end = (i + batchSize < totalSales) ? i + batchSize : totalSales;
-        final batch = salesSnapshot.docs.sublist(i, end);
-        
-        setState(() {
-          statusMessage = 'Processing sales data (${i + 1}-$end of $totalSales)...';
-        });
-        
-        for (var doc in batch) {
-          final data = doc.data() as Map<String, dynamic>;
-          final petrolLitres =
-              data['petrol_litres'] is num
-                  ? (data['petrol_litres'] as num).toDouble()
-                  : 0.0;
-          final dieselLitres =
-              data['diesel_litres'] is num
-                  ? (data['diesel_litres'] as num).toDouble()
-                  : 0.0;
-          final totalLitres = petrolLitres + dieselLitres;
-
-          final List<dynamic> rowData = [
-            data['date'] != null
-                ? DateFormat(
-                  'dd/MM/yyyy',
-                ).format((data['date'] as Timestamp).toDate())
-                : 'N/A',
-            petrolLitres,
-            data['petrol_rupees'] ?? 0.0,
-            dieselLitres,
-            data['diesel_rupees'] ?? 0.0,
-            totalLitres,
-            data['total_amount'] ?? 0.0,
-          ];
-
-          for (var i = 0; i < rowData.length; i++) {
-            final cell = salesSheet.cell(
-              excel.CellIndex.indexByColumnRow(
-                columnIndex: i,
-                rowIndex: salesRow,
-              ),
-            );
-            cell.value = excel.TextCellValue(rowData[i].toString());
-          }
-          salesRow++;
-        }
-      }
-
-      setState(() {
-        statusMessage = 'Formatting Excel file...';
-      });
-
+      // Format columns
       for (var sheet in excelFile.sheets.values) {
         for (var i = 0; i < 10; i++) {
           sheet.setColumnWidth(i, 20);
         }
       }
 
-      final now = DateTime.now();
-      final formattedDate = DateFormat('yyyy-MM-dd_HH-mm-ss').format(now);
-      final fileName = 'Al_Qaim_Petroleum_exported_at_$formattedDate.xlsx';
-
-      final fileBytes = excelFile.save();
+      // Generate filename with timestamp
+      final fileName = 'Al_Qaim_Petroleum_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.xlsx';
+      final fileBytes = excelFile.encode();
+      
       if (fileBytes == null) {
         throw Exception('Failed to generate Excel file');
       }
 
       if (kIsWeb) {
-        final blob = html.Blob([
-          Uint8List.fromList(fileBytes),
-        ], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        // Simplified web download
+        final blob = html.Blob(
+          [fileBytes], 
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        );
         final url = html.Url.createObjectUrlFromBlob(blob);
-
-        final anchor =
-            html.AnchorElement(href: url)
-              ..setAttribute('download', fileName)
-              ..style.display = 'none';
-
-        html.document.body?.children.add(anchor);
-        anchor.click();
-
-        html.document.body?.children.remove(anchor);
+        html.AnchorElement(href: url)
+          ..setAttribute('download', fileName)
+          ..click();
         html.Url.revokeObjectUrl(url);
 
         setState(() {
@@ -487,11 +295,10 @@ class _ExportDataState extends State<ExportData> {
           statusMessage = 'Excel file downloaded successfully!';
         });
       } else {
+        // Mobile/desktop download
         final downloadsDir = await _getDownloadsDirectory();
         final filePath = path.join(downloadsDir.path, fileName);
-
-        final file = File(filePath);
-        await file.writeAsBytes(fileBytes);
+        await File(filePath).writeAsBytes(fileBytes);
 
         setState(() {
           isExporting = false;
@@ -508,12 +315,133 @@ class _ExportDataState extends State<ExportData> {
     }
   }
 
+  void _addHeaders(excel.Sheet sheet, List<String> headers, excel.CellStyle style) {
+    for (var i = 0; i < headers.length; i++) {
+      final cell = sheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+      cell.value = excel.TextCellValue(headers[i]);
+      cell.cellStyle = style;
+    }
+  }
+
+  Future<void> _processCustomersData(
+    QuerySnapshot snapshot, 
+    excel.Sheet sheet
+  ) async {
+    int row = 1;
+    const batchSize = 100;
+    final total = snapshot.docs.length;
+
+    for (int i = 0; i < total; i += batchSize) {
+      final end = (i + batchSize < total) ? i + batchSize : total;
+      setState(() {
+        statusMessage = 'Processing customers (${i + 1}-$end of $total)...';
+      });
+
+      for (var doc in snapshot.docs.sublist(i, end)) {
+        final data = doc.data() as Map<String, dynamic>;
+        final rowData = [
+          data['name'] ?? '',
+          data['phone'] ?? '',
+          data['cnic'] ?? '',
+          data['page_number'] ?? '',
+          data['balance']?.toString() ?? '0.0',
+          data['created_at'] != null
+              ? DateFormat('dd/MM/yyyy').format((data['created_at'] as Timestamp).toDate())
+              : 'N/A',
+        ];
+
+        for (var col = 0; col < rowData.length; col++) {
+          sheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row))
+              .value = excel.TextCellValue(rowData[col]);
+        }
+        row++;
+      }
+    }
+  }
+
+  Future<void> _processTransactionsData(
+    QuerySnapshot snapshot, 
+    excel.Sheet sheet
+  ) async {
+    int row = 1;
+    const batchSize = 100;
+    final total = snapshot.docs.length;
+
+    for (int i = 0; i < total; i += batchSize) {
+      final end = (i + batchSize < total) ? i + batchSize : total;
+      setState(() {
+        statusMessage = 'Processing transactions (${i + 1}-$end of $total)...';
+      });
+
+      for (var doc in snapshot.docs.sublist(i, end)) {
+        final data = doc.data() as Map<String, dynamic>;
+        final rowData = [
+          data['date'] != null
+              ? DateFormat('dd/MM/yyyy').format((data['date'] as Timestamp).toDate())
+              : 'N/A',
+          data['customer_name'] ?? '',
+          data['phone'] ?? '',
+          data['previous_balance']?.toString() ?? '0.0',
+          data['amount_paid']?.toString() ?? '0.0',
+          data['amount_taken']?.toString() ?? '0.0',
+          data['new_balance']?.toString() ?? '0.0',
+        ];
+
+        for (var col = 0; col < rowData.length; col++) {
+          sheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row))
+              .value = excel.TextCellValue(rowData[col]);
+        }
+        row++;
+      }
+    }
+  }
+
+  Future<void> _processSalesData(
+    QuerySnapshot snapshot, 
+    excel.Sheet sheet
+  ) async {
+    int row = 1;
+    const batchSize = 100;
+    final total = snapshot.docs.length;
+
+    for (int i = 0; i < total; i += batchSize) {
+      final end = (i + batchSize < total) ? i + batchSize : total;
+      setState(() {
+        statusMessage = 'Processing sales (${i + 1}-$end of $total)...';
+      });
+
+      for (var doc in snapshot.docs.sublist(i, end)) {
+        final data = doc.data() as Map<String, dynamic>;
+        final petrolLitres = (data['petrol_litres'] is num ? data['petrol_litres'] : 0.0).toString();
+        final dieselLitres = (data['diesel_litres'] is num ? data['diesel_litres'] : 0.0).toString();
+        final totalLitres = (double.parse(petrolLitres) + double.parse(dieselLitres)).toString();
+
+        final rowData = [
+          data['date'] != null
+              ? DateFormat('dd/MM/yyyy').format((data['date'] as Timestamp).toDate())
+              : 'N/A',
+          petrolLitres,
+          data['petrol_rupees']?.toString() ?? '0.0',
+          dieselLitres,
+          data['diesel_rupees']?.toString() ?? '0.0',
+          totalLitres,
+          data['total_amount']?.toString() ?? '0.0',
+        ];
+
+        for (var col = 0; col < rowData.length; col++) {
+          sheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row))
+              .value = excel.TextCellValue(rowData[col]);
+        }
+        row++;
+      }
+    }
+  }
+
   Future<Directory> _getDownloadsDirectory() async {
     Directory? directory;
     try {
       if (Platform.isWindows) {
-        final home = Platform.environment['USERPROFILE']!;
-        directory = Directory('$home\\Downloads');
+        directory = Directory('${Platform.environment['USERPROFILE']}\\Downloads');
       } else if (Platform.isAndroid) {
         directory = await getExternalStorageDirectory();
       } else {
@@ -524,11 +452,9 @@ class _ExportDataState extends State<ExportData> {
     }
 
     directory ??= await getTemporaryDirectory();
-
     if (!await directory.exists()) {
       await directory.create(recursive: true);
     }
-
     return directory;
   }
 
@@ -536,9 +462,7 @@ class _ExportDataState extends State<ExportData> {
     try {
       if (kIsWeb) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('File should have been downloaded to your device'),
-          ),
+          const SnackBar(content: Text('File downloaded to your device')),
         );
         return;
       }
@@ -546,8 +470,7 @@ class _ExportDataState extends State<ExportData> {
       final file = File(exportedFilePath);
       if (await file.exists()) {
         if (Platform.isWindows) {
-          final folderPath = path.dirname(exportedFilePath);
-          await Process.run('explorer.exe', [folderPath]);
+          await Process.run('explorer.exe', [path.dirname(exportedFilePath)]);
         } else if (Platform.isAndroid) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('File saved to downloads folder')),
