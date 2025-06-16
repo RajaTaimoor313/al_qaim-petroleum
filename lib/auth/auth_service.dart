@@ -21,4 +21,10 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('is_authenticated') ?? false;
   }
+
+  // Clear authentication state on app start
+  Future<void> clearAuthenticationOnStart() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('is_authenticated', false);
+  }
 } 

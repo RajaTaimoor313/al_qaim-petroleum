@@ -95,7 +95,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
     _activityService.resetTimer(context);
     
     final bool isMobile = MediaQuery.of(context).size.width < 600;
-    final mediaQuerySize = MediaQuery.of(context).size;
 
     return Scaffold(
       key: _scaffoldKey,

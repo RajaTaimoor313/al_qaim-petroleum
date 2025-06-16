@@ -6,7 +6,6 @@ import 'package:excel/excel.dart' as excel;
 import 'package:intl/intl.dart';
 import 'package:path/path.dart' as path;
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'dart:typed_data';
 import 'package:universal_html/html.dart' as html;
 
 class ExportData extends StatefulWidget {

@@ -5,9 +5,14 @@ import 'package:flutter/material.dart';
 import 'home_page.dart';
 import 'auth/password_screen.dart';
 import 'auth/activity_service.dart';
+import 'auth/auth_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Clear authentication state on app start
+  await AuthService().clearAuthenticationOnStart();
+  
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
