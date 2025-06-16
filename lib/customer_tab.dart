@@ -37,78 +37,340 @@ class _CustomersState extends State<Customers> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    final spacing = isMobile ? 12.0 : 20.0;
-    final fontSize = isMobile ? 18.0 : 22.0;
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final double padding = isMobile ? 12.0 : 16.0;
+    final double borderRadius = isMobile ? 12.0 : 15.0;
+    final double buttonSpacing = isMobile ? 8.0 : 10.0;
+    final double titleFontSize = isMobile ? 20.0 : 24.0;
+    final double buttonTextFontSize = isMobile ? 12.0 : 14.0;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
+    return Container(
+      padding: EdgeInsets.all(padding),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(borderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            spreadRadius: 1,
+            blurRadius: 5,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Customers',
+                style: TextStyle(
+                  fontSize: titleFontSize,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              if (!isMobile) // Use regular buttons in desktop
+                Row(
+                  children: [
+                    ElevatedButton.icon(
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
+                                isAddingCustomer = true;
+                                isViewingCustomers = false;
+                                _clearForm();
+                              }),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isAddingCustomer
+                                ? Colors.green.shade700
+                                : Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(Icons.person_add, size: 20),
+                      label: Text(
+                        'Add Customer',
+                        style: TextStyle(fontSize: buttonTextFontSize),
+                      ),
+                    ),
+                    SizedBox(width: buttonSpacing),
+                    ElevatedButton.icon(
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
+                                isAddingCustomer = false;
+                                isViewingCustomers = true;
+                              }),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor:
+                            isViewingCustomers
+                                ? Colors.green.shade700
+                                : Colors.green,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                      icon: const Icon(Icons.people, size: 20),
+                      label: Text(
+                        'View Customers',
+                        style: TextStyle(fontSize: buttonTextFontSize),
+                      ),
+                    ),
+                  ],
+                ),
+              if (isMobile) // Use icon buttons in mobile
+                Row(
+                  children: [
+                    IconButton(
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
+                                isAddingCustomer = true;
+                                isViewingCustomers = false;
+                                _clearForm();
+                              }),
+                      icon: Icon(
+                        Icons.person_add,
+                        color:
+                            isAddingCustomer
+                                ? Colors.green.shade700
+                                : Colors.green,
+                      ),
+                      tooltip: 'Add Customer',
+                    ),
+                    IconButton(
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
+                                isAddingCustomer = false;
+                                isViewingCustomers = true;
+                              }),
+                      icon: Icon(
+                        Icons.people,
+                        color:
+                            isViewingCustomers
+                                ? Colors.green.shade700
+                                : Colors.green,
+                      ),
+                      tooltip: 'View Customers',
+                    ),
+                  ],
+                ),
+            ],
+          ),
+          SizedBox(height: isMobile ? 12.0 : 20.0),
+          if (isAddingCustomer)
+            Expanded(child: _buildAddCustomerForm(isMobile)),
+          if (isViewingCustomers) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search customers by name or phone...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      contentPadding: EdgeInsets.symmetric(
+                        vertical: isMobile ? 8.0 : 12.0,
+                        horizontal: isMobile ? 12.0 : 16.0,
+                      ),
+                    ),
+                    onChanged:
+                        (value) =>
+                            setState(() => searchQuery = value.toLowerCase()),
+                  ),
+                ),
+                SizedBox(width: isMobile ? 8.0 : 12.0),
+                ElevatedButton(
+                  onPressed: () => setState(() {}),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 12.0 : 16.0,
+                      vertical: isMobile ? 8.0 : 10.0,
+                    ),
+                  ),
+                  child: Text(
+                    'Refresh',
+                    style: TextStyle(fontSize: buttonTextFontSize),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isMobile ? 12.0 : 16.0),
+            _buildCustomersList(isMobile),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAddCustomerForm(bool isMobile) {
+    final double spacing = isMobile ? 12.0 : 16.0;
+
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Form(
+        key: _formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Add Customer',
-              style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
+            SizedBox(height: spacing * 1.5),
+            TextFormField(
+              controller: nameController,
+              decoration: InputDecoration(
+                labelText: 'Customer Name',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              validator:
+                  (value) =>
+                      value!.isEmpty ? 'Please enter customer name' : null,
             ),
             SizedBox(height: spacing),
-            Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: nameController,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                    decoration: InputDecoration(labelText: 'Name'),
-                    validator: (value) => value!.isEmpty ? 'Enter name' : null,
+            TextFormField(
+              controller: phoneController,
+              decoration: InputDecoration(
+                labelText: 'Phone Number',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              keyboardType: TextInputType.phone,
+              validator:
+                  (value) =>
+                      value!.isEmpty
+                          ? 'Please enter phone number'
+                          : (RegExp(r'^\d{10,}$').hasMatch(value)
+                              ? null
+                              : 'Invalid phone number'),
+            ),
+            SizedBox(height: spacing),
+            TextFormField(
+              controller: balanceController,
+              decoration: InputDecoration(
+                labelText: 'Previous Balance',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              keyboardType: TextInputType.number,
+              validator: (value) {
+                if (value!.isEmpty) return 'Please enter previous balance';
+                final balance = double.tryParse(value);
+                if (balance == null) return 'Invalid number';
+                if (balance < 0) {
+                  return 'Balance must be a Positive Value';
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: spacing),
+            TextFormField(
+              controller: addressController,
+              decoration: InputDecoration(
+                labelText: 'CNIC',
+                hintText: '13-digit CNIC number (optional)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              keyboardType: TextInputType.number,
+              // Making CNIC field optional
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return null; // Optional field
+                }
+                // If provided, validate it has 13 digits
+                if (!RegExp(r'^\d{13}$').hasMatch(value)) {
+                  return 'CNIC should have 13 digits';
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: spacing),
+            TextFormField(
+              controller: pageNumberController,
+              decoration: InputDecoration(
+                labelText: 'Page Number',
+                hintText: 'Enter page number in register (optional)',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                filled: true,
+                fillColor: Colors.grey.shade50,
+              ),
+              keyboardType: TextInputType.number,
+              // Making Page Number field optional
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return null; // Optional field
+                }
+                // If provided, validate it's a number
+                if (!RegExp(r'^\d+$').hasMatch(value)) {
+                  return 'Page Number should be a valid number';
+                }
+                return null;
+              },
+            ),
+            SizedBox(height: spacing + 4.0),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _isLoading ? null : _submitCustomerForm,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.green,
+                  foregroundColor: Colors.white,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isMobile ? 24.0 : 32.0,
+                    vertical: isMobile ? 10.0 : 12.0,
                   ),
-                  SizedBox(height: spacing),
-                  TextFormField(
-                    controller: phoneController,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                    decoration: InputDecoration(labelText: 'Phone'),
-                    validator: (value) => value!.isEmpty ? 'Enter phone' : null,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  SizedBox(height: spacing),
-                  TextFormField(
-                    controller: balanceController,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                    decoration: InputDecoration(labelText: 'Balance'),
-                    validator: (value) => value!.isEmpty ? 'Enter balance' : null,
-                  ),
-                  SizedBox(height: spacing),
-                  TextFormField(
-                    controller: addressController,
-                    textInputAction: TextInputAction.next,
-                    onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
-                    decoration: InputDecoration(labelText: 'Address'),
-                    validator: (value) => value!.isEmpty ? 'Enter address' : null,
-                  ),
-                  SizedBox(height: spacing),
-                  TextFormField(
-                    controller: pageNumberController,
-                    textInputAction: TextInputAction.done,
-                    onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
-                    decoration: InputDecoration(labelText: 'Page Number'),
-                    validator: (value) => value!.isEmpty ? 'Enter page number' : null,
-                  ),
-                  SizedBox(height: spacing),
-                  ElevatedButton(
-                    onPressed: _submitCustomerForm,
-                    child: Text('Add Customer'),
-                  ),
-                ],
+                ),
+                child:
+                    _isLoading
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                        : Text(
+                          'Submit',
+                          style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
+                        ),
               ),
             ),
+            // Add padding below submit button for any device
+            SizedBox(height: spacing * 4),
           ],
         ),
       ),

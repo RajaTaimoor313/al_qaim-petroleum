@@ -223,12 +223,23 @@ class _ExportDataState extends State<ExportData> {
         'Name', 'Phone', 'CNIC', 'Page Number', 'Balance', 'Created Date',
       ];
       final transactionHeaders = [
-        'Date', 'Custom Date', 'Customer Name', 'Phone', 'Previous Balance',
-        'Amount Paid', 'Amount Taken', 'New Balance',
+        'Date',
+        'Customer Name',
+        'Phone',
+        'Previous Balance',
+        'Amount Paid',
+        'Amount Taken',
+        'New Balance',
       ];
       final salesHeaders = [
-        'Date', 'Custom Date', 'Petrol Litres', 'Petrol Amount (Rs)', 'Diesel Litres',
-        'Diesel Amount (Rs)', 'Total Litres', 'Total Amount (Rs)',
+        'Date',
+        'Petrol Litres',
+        'Petrol Rate',
+        'Petrol Amount (Rs)',
+        'Diesel Litres',
+        'Diesel Rate',
+        'Diesel Amount (Rs)',
+        'Total Amount (Rs)',
       ];
 
       final headerStyle = excel.CellStyle(
@@ -376,9 +387,6 @@ class _ExportDataState extends State<ExportData> {
       for (var doc in snapshot.docs.sublist(i, end)) {
         final data = doc.data() as Map<String, dynamic>;
         final rowData = [
-          data['date'] != null
-              ? DateFormat('dd/MM/yyyy').format((data['date'] as Timestamp).toDate())
-              : 'N/A',
           data['custom_date'] != null
               ? DateFormat('dd/MM/yyyy').format((data['custom_date'] as Timestamp).toDate())
               : 'N/A',
@@ -410,27 +418,21 @@ class _ExportDataState extends State<ExportData> {
     for (int i = 0; i < total; i += batchSize) {
       final end = (i + batchSize < total) ? i + batchSize : total;
       setState(() {
-        statusMessage = 'Processing sales (${i + 1}-$end of $total)...';
+        statusMessage = 'Processing sales data (${i + 1}-$end of $total)...';
       });
 
       for (var doc in snapshot.docs.sublist(i, end)) {
         final data = doc.data() as Map<String, dynamic>;
-        final petrolLitres = (data['petrol_litres'] is num ? data['petrol_litres'] : 0.0).toString();
-        final dieselLitres = (data['diesel_litres'] is num ? data['diesel_litres'] : 0.0).toString();
-        final totalLitres = (double.parse(petrolLitres) + double.parse(dieselLitres)).toString();
-
         final rowData = [
-          data['date'] != null
-              ? DateFormat('dd/MM/yyyy').format((data['date'] as Timestamp).toDate())
-              : 'N/A',
           data['custom_date'] != null
               ? DateFormat('dd/MM/yyyy').format((data['custom_date'] as Timestamp).toDate())
               : 'N/A',
-          petrolLitres,
+          data['petrol_litres']?.toString() ?? '0.0',
+          data['petrol_rate']?.toString() ?? '0.0',
           data['petrol_rupees']?.toString() ?? '0.0',
-          dieselLitres,
+          data['diesel_litres']?.toString() ?? '0.0',
+          data['diesel_rate']?.toString() ?? '0.0',
           data['diesel_rupees']?.toString() ?? '0.0',
-          totalLitres,
           data['total_amount']?.toString() ?? '0.0',
         ];
 

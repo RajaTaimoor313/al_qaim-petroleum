@@ -142,7 +142,6 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       drawer: isMobile
         ? Drawer(
             child: Container(
-              padding: const EdgeInsets.only(top: 10),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [Colors.green, Colors.green],
@@ -190,36 +189,33 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ),
           )
         : null,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(4.0),
-          child: isMobile
-            ? _buildSelectedScreen()
-            : Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: 250,
-                    decoration: const BoxDecoration(
-                      borderRadius: BorderRadius.all(Radius.circular(15)),
-                      gradient: LinearGradient(
-                        colors: [Colors.green, Colors.green],
-                        begin: Alignment.topRight,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: _buildPanelShow(),
-                  ),
-                  Expanded(
-                    child: Container(
-                      height: mediaQuerySize.height - (kToolbarHeight + 18),
-                      margin: const EdgeInsets.only(left: 8.0),
-                      child: _buildSelectedScreen(),
+      body: Container(
+        color: Colors.grey.shade50,
+        child: isMobile
+          ? _buildSelectedScreen()
+          : Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 250,
+                  height: MediaQuery.of(context).size.height,
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [Colors.green, Colors.green],
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomRight,
                     ),
                   ),
-                ],
-              ),
-        ),
+                  child: _buildPanelShow(),
+                ),
+                Expanded(
+                  child: Container(
+                    margin: const EdgeInsets.all(8.0),
+                    child: _buildSelectedScreen(),
+                  ),
+                ),
+              ],
+            ),
       ),
     );
   }
@@ -238,6 +234,12 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           ),
           child: Column(
             children: [
+              const Icon(
+                Icons.local_gas_station,
+                color: Colors.white,
+                size: 54,
+              ),
+              const SizedBox(height: 16),
               Text(
                 'AL QAIM PETROLEUM',
                 style: GoogleFonts.lato(

@@ -29,6 +29,13 @@ class _AddDataState extends State<AddData> {
   // Added for the form type selection
   bool showTransactionForm = true;
 
+  final TextEditingController petrolLitresController = TextEditingController();
+  final TextEditingController petrolRupeesController = TextEditingController();
+  final TextEditingController petrolRateController = TextEditingController();
+  final TextEditingController dieselLitresController = TextEditingController();
+  final TextEditingController dieselRupeesController = TextEditingController();
+  final TextEditingController dieselRateController = TextEditingController();
+
   @override
   void dispose() {
     customerNameController.dispose();
@@ -39,26 +46,39 @@ class _AddDataState extends State<AddData> {
     pageNumberController.dispose();
     petrolLitresController.dispose();
     petrolRupeesController.dispose();
+    petrolRateController.dispose();
     dieselLitresController.dispose();
     dieselRupeesController.dispose();
+    dieselRateController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    final spacing = isMobile ? 12.0 : 20.0;
-    final fontSize = isMobile ? 18.0 : 22.0;
+    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final double horizontalPadding = isMobile ? 12.0 : 16.0;
+    final double verticalPadding = isMobile ? 12.0 : 16.0;
+    final double borderRadius = isMobile ? 12.0 : 15.0;
+    final double fontSize = isMobile ? 20.0 : 24.0;
+    final double spacing = isMobile ? 12.0 : 16.0;
 
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(borderRadius),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.shade200,
+            spreadRadius: 1,
+            blurRadius: 5,
+          ),
+        ],
+      ),
       child: SingleChildScrollView(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(context).viewInsets.bottom + 16,
-          left: 16,
-          right: 16,
-          top: 16,
-        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -67,6 +87,7 @@ class _AddDataState extends State<AddData> {
               style: TextStyle(fontSize: fontSize, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: spacing),
+
             // Form type selector
             Row(
               children: [
@@ -81,7 +102,9 @@ class _AddDataState extends State<AddData> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          showTransactionForm ? Colors.green : Colors.grey.shade300,
+                          showTransactionForm
+                              ? Colors.green
+                              : Colors.grey.shade300,
                       foregroundColor:
                           showTransactionForm ? Colors.white : Colors.black,
                       shape: RoundedRectangleBorder(
@@ -104,7 +127,9 @@ class _AddDataState extends State<AddData> {
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor:
-                          !showTransactionForm ? Colors.green : Colors.grey.shade300,
+                          !showTransactionForm
+                              ? Colors.green
+                              : Colors.grey.shade300,
                       foregroundColor:
                           !showTransactionForm ? Colors.white : Colors.black,
                       shape: RoundedRectangleBorder(
@@ -118,6 +143,7 @@ class _AddDataState extends State<AddData> {
               ],
             ),
             SizedBox(height: spacing + 4),
+
             // Show the appropriate form
             showTransactionForm
                 ? _buildTransactionForm(spacing, isMobile)
@@ -167,8 +193,6 @@ class _AddDataState extends State<AddData> {
             keyboardType: TextInputType.phone,
             validator:
                 (value) => value!.isEmpty ? 'Please enter phone number' : null,
-            textInputAction: TextInputAction.next,
-            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
           SizedBox(height: spacing),
           TextFormField(
@@ -184,8 +208,6 @@ class _AddDataState extends State<AddData> {
             ),
             keyboardType: TextInputType.number,
             readOnly: true,
-            textInputAction: TextInputAction.next,
-            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
           SizedBox(height: spacing),
           TextFormField(
@@ -207,8 +229,6 @@ class _AddDataState extends State<AddData> {
                         : (double.tryParse(value) != null
                             ? null
                             : 'Invalid number'),
-            textInputAction: TextInputAction.next,
-            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
           SizedBox(height: spacing),
           InkWell(
@@ -256,8 +276,6 @@ class _AddDataState extends State<AddData> {
               }
               return null;
             },
-            textInputAction: TextInputAction.next,
-            onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
           ),
           SizedBox(height: spacing),
           TextFormField(
@@ -284,8 +302,6 @@ class _AddDataState extends State<AddData> {
               }
               return null;
             },
-            textInputAction: TextInputAction.done,
-            onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
           ),
           SizedBox(height: spacing + 8),
           SizedBox(
@@ -490,6 +506,9 @@ class _AddDataState extends State<AddData> {
                           fillColor: Colors.white,
                         ),
                         keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          _calculatePetrolRupees();
+                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) return null;
                           final amount = double.tryParse(value);
@@ -497,8 +516,31 @@ class _AddDataState extends State<AddData> {
                           if (amount < 0) return 'Must be positive';
                           return null;
                         },
-                        textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                      ),
+                    ),
+                    SizedBox(width: spacing),
+                    Expanded(
+                      child: TextFormField(
+                        controller: petrolRateController,
+                        decoration: InputDecoration(
+                          labelText: 'Rate per Litre',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          _calculatePetrolRupees();
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return null;
+                          final amount = double.tryParse(value);
+                          if (amount == null) return 'Invalid number';
+                          if (amount < 0) return 'Must be positive';
+                          return null;
+                        },
                       ),
                     ),
                     SizedBox(width: spacing),
@@ -513,16 +555,8 @@ class _AddDataState extends State<AddData> {
                           filled: true,
                           fillColor: Colors.white,
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return null;
-                          final amount = double.tryParse(value);
-                          if (amount == null) return 'Invalid number';
-                          if (amount < 0) return 'Must be positive';
-                          return null;
-                        },
-                        textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                        readOnly: true,
+                        enabled: false,
                       ),
                     ),
                   ],
@@ -573,6 +607,9 @@ class _AddDataState extends State<AddData> {
                           fillColor: Colors.white,
                         ),
                         keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          _calculateDieselRupees();
+                        },
                         validator: (value) {
                           if (value == null || value.isEmpty) return null;
                           final amount = double.tryParse(value);
@@ -580,8 +617,31 @@ class _AddDataState extends State<AddData> {
                           if (amount < 0) return 'Must be positive';
                           return null;
                         },
-                        textInputAction: TextInputAction.next,
-                        onFieldSubmitted: (_) => FocusScope.of(context).nextFocus(),
+                      ),
+                    ),
+                    SizedBox(width: spacing),
+                    Expanded(
+                      child: TextFormField(
+                        controller: dieselRateController,
+                        decoration: InputDecoration(
+                          labelText: 'Rate per Litre',
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          filled: true,
+                          fillColor: Colors.white,
+                        ),
+                        keyboardType: TextInputType.number,
+                        onChanged: (value) {
+                          _calculateDieselRupees();
+                        },
+                        validator: (value) {
+                          if (value == null || value.isEmpty) return null;
+                          final amount = double.tryParse(value);
+                          if (amount == null) return 'Invalid number';
+                          if (amount < 0) return 'Must be positive';
+                          return null;
+                        },
                       ),
                     ),
                     SizedBox(width: spacing),
@@ -596,16 +656,8 @@ class _AddDataState extends State<AddData> {
                           filled: true,
                           fillColor: Colors.white,
                         ),
-                        keyboardType: TextInputType.number,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return null;
-                          final amount = double.tryParse(value);
-                          if (amount == null) return 'Invalid number';
-                          if (amount < 0) return 'Must be positive';
-                          return null;
-                        },
-                        textInputAction: TextInputAction.done,
-                        onFieldSubmitted: (_) => FocusScope.of(context).unfocus(),
+                        readOnly: true,
+                        enabled: false,
                       ),
                     ),
                   ],
@@ -679,18 +731,29 @@ class _AddDataState extends State<AddData> {
     );
   }
 
-  // Add controllers for the sales form
-  final TextEditingController petrolLitresController = TextEditingController();
-  final TextEditingController petrolRupeesController = TextEditingController();
-  final TextEditingController dieselLitresController = TextEditingController();
-  final TextEditingController dieselRupeesController = TextEditingController();
+  // Calculate rupees based on litres and rate
+  void _calculatePetrolRupees() {
+    final litres = double.tryParse(petrolLitresController.text) ?? 0.0;
+    final rate = double.tryParse(petrolRateController.text) ?? 0.0;
+    final rupees = litres * rate;
+    petrolRupeesController.text = rupees.toStringAsFixed(2);
+  }
+
+  void _calculateDieselRupees() {
+    final litres = double.tryParse(dieselLitresController.text) ?? 0.0;
+    final rate = double.tryParse(dieselRateController.text) ?? 0.0;
+    final rupees = litres * rate;
+    dieselRupeesController.text = rupees.toStringAsFixed(2);
+  }
 
   void _resetSalesForm() {
     setState(() {
       petrolLitresController.clear();
       petrolRupeesController.clear();
+      petrolRateController.clear();
       dieselLitresController.clear();
       dieselRupeesController.clear();
+      dieselRateController.clear();
       selectedDate = DateTime.now();
     });
   }
@@ -700,8 +763,10 @@ class _AddDataState extends State<AddData> {
     if (_formKey.currentState!.validate()) {
       try {
         final petrolLitres = double.tryParse(petrolLitresController.text) ?? 0.0;
+        final petrolRate = double.tryParse(petrolRateController.text) ?? 0.0;
         final petrolRupees = double.tryParse(petrolRupeesController.text) ?? 0.0;
         final dieselLitres = double.tryParse(dieselLitresController.text) ?? 0.0;
+        final dieselRate = double.tryParse(dieselRateController.text) ?? 0.0;
         final dieselRupees = double.tryParse(dieselRupeesController.text) ?? 0.0;
         final totalAmount = petrolRupees + dieselRupees;
 
@@ -715,8 +780,15 @@ class _AddDataState extends State<AddData> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Petrol: ${petrolLitres.toStringAsFixed(2)} L - Rs. ${petrolRupees.toStringAsFixed(2)}'),
-                  Text('Diesel: ${dieselLitres.toStringAsFixed(2)} L - Rs. ${dieselRupees.toStringAsFixed(2)}'),
+                  Text('Petrol:'),
+                  Text('  Litres: ${petrolLitres.toStringAsFixed(2)} L'),
+                  Text('  Rate: Rs. ${petrolRate.toStringAsFixed(2)}/L'),
+                  Text('  Amount: Rs. ${petrolRupees.toStringAsFixed(2)}'),
+                  const SizedBox(height: 8),
+                  Text('Diesel:'),
+                  Text('  Litres: ${dieselLitres.toStringAsFixed(2)} L'),
+                  Text('  Rate: Rs. ${dieselRate.toStringAsFixed(2)}/L'),
+                  Text('  Amount: Rs. ${dieselRupees.toStringAsFixed(2)}'),
                   const Divider(),
                   Text('Total Amount: Rs. ${totalAmount.toStringAsFixed(2)}'),
                 ],
@@ -739,8 +811,10 @@ class _AddDataState extends State<AddData> {
           // Proceed with saving the sales data
           await FirebaseFirestore.instance.collection('sales').add({
             'petrol_litres': petrolLitres,
+            'petrol_rate': petrolRate,
             'petrol_rupees': petrolRupees,
             'diesel_litres': dieselLitres,
+            'diesel_rate': dieselRate,
             'diesel_rupees': dieselRupees,
             'total_amount': totalAmount,
             'date': Timestamp.now(),
@@ -758,11 +832,7 @@ class _AddDataState extends State<AddData> {
           }
 
           // Clear form
-          _formKey.currentState!.reset();
-          petrolLitresController.clear();
-          petrolRupeesController.clear();
-          dieselLitresController.clear();
-          dieselRupeesController.clear();
+          _resetSalesForm();
         }
       } catch (e) {
         if (mounted) {
@@ -788,8 +858,10 @@ class _AddDataState extends State<AddData> {
       pageNumberController.clear();
       petrolLitresController.clear();
       petrolRupeesController.clear();
+      petrolRateController.clear();
       dieselLitresController.clear();
       dieselRupeesController.clear();
+      dieselRateController.clear();
       selectedDate = DateTime.now();
       selectedCustomerId = null;
       customerFound = false;
