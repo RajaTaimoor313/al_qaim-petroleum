@@ -6,6 +6,7 @@ import 'customer_tab.dart';
 import 'dash_board_tab.dart';
 import 'data_entry_tab.dart';
 import 'export_data.dart';
+import 'hbl_pos_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
@@ -336,9 +337,9 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           },
         ),
         ListTile(
-          leading: const Icon(Icons.file_download, color: Colors.white),
+          leading: const Icon(Icons.point_of_sale, color: Colors.white),
           title: Text(
-            'Export',
+            'HBL Point of Sale',
             style: GoogleFonts.lato(
               color: Colors.white,
               fontSize: 16,
@@ -349,6 +350,26 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
           onTap: () {
             setState(() {
               _selectedIndex = 3;
+            });
+            if (MediaQuery.of(context).size.width < 600) {
+              Navigator.pop(context);
+            }
+          },
+        ),
+        ListTile(
+          leading: const Icon(Icons.file_download, color: Colors.white),
+          title: Text(
+            'Export',
+            style: GoogleFonts.lato(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          selected: _selectedIndex == 4,
+          onTap: () {
+            setState(() {
+              _selectedIndex = 4;
             });
             if (MediaQuery.of(context).size.width < 600) {
               Navigator.pop(context);
@@ -376,6 +397,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       case 2:
         return const Customers();
       case 3:
+        return const HBLPointOfSale();
+      case 4:
         return const ExportData();
       default:
         return const Dashboard();

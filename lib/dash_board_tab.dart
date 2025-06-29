@@ -34,6 +34,12 @@ class _DashboardState extends State<Dashboard> {
 
   List<MonthlyData> monthlyData = [];
 
+  // Indian Numbering System formatter
+  String formatIndianNumber(double number) {
+    final formatter = NumberFormat('#,##,##,##,##0.00', 'en_IN');
+    return formatter.format(number);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -840,7 +846,7 @@ class _DashboardState extends State<Dashboard> {
         children: [
           _buildInfoCard(
               'Total Credits',
-              'Rs. ${NumberFormat('#,##0.00').format(totalCredits)}',
+              'Rs. ${formatIndianNumber(totalCredits)}',
             Icons.account_balance_wallet,
               Colors.red.shade600,
               Colors.red.shade50,
@@ -853,7 +859,7 @@ class _DashboardState extends State<Dashboard> {
             SizedBox(height: cardSpacing),
           _buildInfoCard(
               'Total Recovery',
-              'Rs. ${NumberFormat('#,##0.00').format(totalRecovery)}',
+              'Rs. ${formatIndianNumber(totalRecovery)}',
               Icons.payments,
               Colors.green.shade600,
               Colors.green.shade50,
@@ -866,7 +872,7 @@ class _DashboardState extends State<Dashboard> {
             SizedBox(height: cardSpacing),
           _buildInfoCard(
               'Receivable Amount',
-              'Rs. ${NumberFormat('#,##0.00').format(receivableAmount)}',
+              'Rs. ${formatIndianNumber(receivableAmount)}',
             Icons.monetization_on,
             Colors.orange.shade600,
             Colors.orange.shade50,
@@ -892,7 +898,7 @@ class _DashboardState extends State<Dashboard> {
                 Flexible(
                   child: _buildInfoCard(
                     'Total Credits',
-                    'Rs. ${NumberFormat('#,##0.00').format(totalCredits)}',
+                    'Rs. ${formatIndianNumber(totalCredits)}',
                 Icons.account_balance_wallet,
                     Colors.red.shade600,
                     Colors.red.shade50,
@@ -906,7 +912,7 @@ class _DashboardState extends State<Dashboard> {
                 Flexible(
                   child: _buildInfoCard(
                     'Total Recovery',
-                    'Rs. ${NumberFormat('#,##0.00').format(totalRecovery)}',
+                    'Rs. ${formatIndianNumber(totalRecovery)}',
                     Icons.payments,
                 Colors.green.shade600,
                 Colors.green.shade50,
@@ -925,7 +931,7 @@ class _DashboardState extends State<Dashboard> {
                 Flexible(
                   child: _buildInfoCard(
                     'Receivable Amount',
-                    'Rs. ${NumberFormat('#,##0.00').format(receivableAmount)}',
+                    'Rs. ${formatIndianNumber(receivableAmount)}',
             Icons.monetization_on,
             Colors.orange.shade600,
             Colors.orange.shade50,
@@ -953,7 +959,7 @@ class _DashboardState extends State<Dashboard> {
               Flexible(
                 child: _buildInfoCard(
                   'Total Credits',
-                  'Rs. ${NumberFormat('#,##0.00').format(totalCredits)}',
+                  'Rs. ${formatIndianNumber(totalCredits)}',
           Icons.account_balance_wallet,
                   Colors.red.shade600,
                   Colors.red.shade50,
@@ -967,7 +973,7 @@ class _DashboardState extends State<Dashboard> {
               Flexible(
                 child: _buildInfoCard(
                   'Total Recovery',
-                  'Rs. ${NumberFormat('#,##0.00').format(totalRecovery)}',
+                  'Rs. ${formatIndianNumber(totalRecovery)}',
                   Icons.payments,
           Colors.green.shade600,
           Colors.green.shade50,
@@ -981,7 +987,7 @@ class _DashboardState extends State<Dashboard> {
               Flexible(
                 child: _buildInfoCard(
                   'Receivable Amount',
-                  'Rs. ${NumberFormat('#,##0.00').format(receivableAmount)}',
+                  'Rs. ${formatIndianNumber(receivableAmount)}',
           Icons.monetization_on,
           Colors.orange.shade600,
           Colors.orange.shade50,
@@ -1008,8 +1014,8 @@ class _DashboardState extends State<Dashboard> {
           children: [
             _buildFuelCard(
               'Petrol',
-              '${NumberFormat('#,##0.00').format(petrolLitres)} L',
-              'Rs. ${NumberFormat('#,##0.00').format(petrolRupees)}',
+              '${formatIndianNumber(petrolLitres)} L',
+              'Rs. ${formatIndianNumber(petrolRupees)}',
               Icons.local_gas_station,
               Colors.orange.shade700,
               Colors.orange.shade50,
@@ -1020,8 +1026,8 @@ class _DashboardState extends State<Dashboard> {
             SizedBox(height: cardSpacing),
             _buildFuelCard(
               'Diesel',
-              '${NumberFormat('#,##0.00').format(dieselLitres)} L',
-              'Rs. ${NumberFormat('#,##0.00').format(dieselRupees)}',
+              '${formatIndianNumber(dieselLitres)} L',
+              'Rs. ${formatIndianNumber(dieselRupees)}',
               Icons.local_gas_station,
               Colors.blue.shade700,
               Colors.blue.shade50,
@@ -1032,8 +1038,8 @@ class _DashboardState extends State<Dashboard> {
             SizedBox(height: cardSpacing),
             _buildTotalFuelCard(
               'Total Fuel',
-              '${NumberFormat('#,##0.00').format(petrolLitres + dieselLitres)} L',
-              'Rs. ${NumberFormat('#,##0.00').format(petrolRupees + dieselRupees)}',
+              '${formatIndianNumber(petrolLitres + dieselLitres)} L',
+              'Rs. ${formatIndianNumber(petrolRupees + dieselRupees)}',
               Icons.local_gas_station,
               Colors.green.shade700,
               Colors.green.shade50,
@@ -1053,8 +1059,8 @@ class _DashboardState extends State<Dashboard> {
                 Flexible(
                   child: _buildFuelCard(
                     'Petrol',
-                    '${NumberFormat('#,##0.00').format(petrolLitres)} L',
-                    'Rs. ${NumberFormat('#,##0.00').format(petrolRupees)}',
+                    '${formatIndianNumber(petrolLitres)} L',
+                    'Rs. ${formatIndianNumber(petrolRupees)}',
                     Icons.local_gas_station,
                     Colors.orange.shade700,
                     Colors.orange.shade50,
@@ -1066,8 +1072,8 @@ class _DashboardState extends State<Dashboard> {
                 Flexible(
                   child: _buildFuelCard(
                     'Diesel',
-                    '${NumberFormat('#,##0.00').format(dieselLitres)} L',
-                    'Rs. ${NumberFormat('#,##0.00').format(dieselRupees)}',
+                    '${formatIndianNumber(dieselLitres)} L',
+                    'Rs. ${formatIndianNumber(dieselRupees)}',
                     Icons.local_gas_station,
                     Colors.blue.shade700,
                     Colors.blue.shade50,
@@ -1084,8 +1090,8 @@ class _DashboardState extends State<Dashboard> {
                 Flexible(
                   child: _buildTotalFuelCard(
                     'Total Fuel',
-                    '${NumberFormat('#,##0.00').format(petrolLitres + dieselLitres)} L',
-                    'Rs. ${NumberFormat('#,##0.00').format(petrolRupees + dieselRupees)}',
+                    '${formatIndianNumber(petrolLitres + dieselLitres)} L',
+                    'Rs. ${formatIndianNumber(petrolRupees + dieselRupees)}',
                     Icons.local_gas_station,
                     Colors.green.shade700,
                     Colors.green.shade50,
@@ -1108,8 +1114,8 @@ class _DashboardState extends State<Dashboard> {
               Flexible(
                 child: _buildFuelCard(
                   'Petrol',
-                  '${NumberFormat('#,##0.00').format(petrolLitres)} L',
-                  'Rs. ${NumberFormat('#,##0.00').format(petrolRupees)}',
+                  '${formatIndianNumber(petrolLitres)} L',
+                  'Rs. ${formatIndianNumber(petrolRupees)}',
                   Icons.local_gas_station,
                   Colors.orange.shade700,
                   Colors.orange.shade50,
@@ -1121,8 +1127,8 @@ class _DashboardState extends State<Dashboard> {
               Flexible(
                 child: _buildFuelCard(
                   'Diesel',
-                  '${NumberFormat('#,##0.00').format(dieselLitres)} L',
-                  'Rs. ${NumberFormat('#,##0.00').format(dieselRupees)}',
+                  '${formatIndianNumber(dieselLitres)} L',
+                  'Rs. ${formatIndianNumber(dieselRupees)}',
                   Icons.local_gas_station,
                   Colors.blue.shade700,
                   Colors.blue.shade50,
@@ -1134,8 +1140,8 @@ class _DashboardState extends State<Dashboard> {
               Flexible(
                 child: _buildTotalFuelCard(
                   'Total Fuel',
-                  '${NumberFormat('#,##0.00').format(petrolLitres + dieselLitres)} L',
-                  'Rs. ${NumberFormat('#,##0.00').format(petrolRupees + dieselRupees)}',
+                  '${formatIndianNumber(petrolLitres + dieselLitres)} L',
+                  'Rs. ${formatIndianNumber(petrolRupees + dieselRupees)}',
                   Icons.local_gas_station,
                   Colors.green.shade700,
                   Colors.green.shade50,

@@ -15,6 +15,7 @@ class _CustomersState extends State<Customers> {
   bool isAddingCustomer = false;
   bool isViewingCustomers = true;
   String searchQuery = '';
+  String selectedFilter = 'All Customers'; // Add filter state
   final TextEditingController nameController = TextEditingController();
   final TextEditingController phoneController = TextEditingController();
   final TextEditingController balanceController = TextEditingController();
@@ -23,6 +24,19 @@ class _CustomersState extends State<Customers> {
   final TextEditingController pageNumberController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
+
+  // Filter options
+  final List<String> filterOptions = [
+    'All Customers',
+    'Defaulter Customers',
+    'Simple Customers',
+  ];
+
+  // Indian Numbering System formatter
+  String formatIndianNumber(double number) {
+    final formatter = NumberFormat('#,##,##,##,##0.00', 'en_IN');
+    return formatter.format(number);
+  }
 
   @override
   void dispose() {
@@ -208,6 +222,51 @@ class _CustomersState extends State<Customers> {
                   child: Text(
                     'Refresh',
                     style: TextStyle(fontSize: buttonTextFontSize),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: isMobile ? 8.0 : 12.0),
+            // Filter dropdown
+            Row(
+              children: [
+                Text(
+                  'Filter: ',
+                  style: TextStyle(
+                    fontSize: isMobile ? 14.0 : 16.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                SizedBox(width: isMobile ? 8.0 : 12.0),
+                Expanded(
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: isMobile ? 8.0 : 12.0),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade400),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedFilter,
+                        isExpanded: true,
+                        items: filterOptions.map((String option) {
+                          return DropdownMenuItem<String>(
+                            value: option,
+                            child: Text(
+                              option,
+                              style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
+                            ),
+                          );
+                        }).toList(),
+                        onChanged: (String? newValue) {
+                          if (newValue != null) {
+                            setState(() {
+                              selectedFilter = newValue;
+                            });
+                          }
+                        },
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -411,8 +470,28 @@ class _CustomersState extends State<Customers> {
                     data['name']?.toLowerCase() ??
                     '';
                 final phone = data['phone']?.toLowerCase() ?? '';
-                return name.contains(searchQuery) ||
+                final isDefaulter = data['is_defaulter'] ?? false;
+                
+                // Apply search filter
+                final matchesSearch = name.contains(searchQuery) ||
                     phone.contains(searchQuery);
+                
+                // Apply category filter
+                bool matchesFilter = true;
+                switch (selectedFilter) {
+                  case 'Defaulter Customers':
+                    matchesFilter = isDefaulter;
+                    break;
+                  case 'Simple Customers':
+                    matchesFilter = !isDefaulter;
+                    break;
+                  case 'All Customers':
+                  default:
+                    matchesFilter = true;
+                    break;
+                }
+                
+                return matchesSearch && matchesFilter;
               }).toList();
 
           return ListView.builder(
@@ -436,12 +515,37 @@ class _CustomersState extends State<Customers> {
                     vertical: isMobile ? 8.0 : 16.0,
                     horizontal: isMobile ? 12.0 : 16.0,
                   ),
-                  title: Text(
-                    data['name'],
-                    style: TextStyle(
-                      fontSize: isMobile ? 16.0 : 20.0,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          data['name'],
+                          style: TextStyle(
+                            fontSize: isMobile ? 16.0 : 20.0,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (data['is_defaulter'] == true)
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 6.0 : 8.0,
+                            vertical: isMobile ? 2.0 : 4.0,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.red,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Text(
+                            'Defaulter Customer',
+                            style: TextStyle(
+                              fontSize: isMobile ? 10.0 : 12.0,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -457,7 +561,7 @@ class _CustomersState extends State<Customers> {
                             ),
                           ),
                           Text(
-                            'Rs. ${balance.toStringAsFixed(2)}',
+                            'Rs. ${formatIndianNumber(balance)}',
                             style: TextStyle(
                               fontSize: isMobile ? 12.0 : 14.0,
                               fontWeight: FontWeight.bold,
@@ -532,6 +636,7 @@ class _CustomersState extends State<Customers> {
           'balance': double.parse(balanceController.text.trim()),
           'cnic': cnic,
           'page_number': pageNumber,
+          'is_defaulter': false,
           'created_at': FieldValue.serverTimestamp(),
         });
 
@@ -588,12 +693,107 @@ class _CustomersState extends State<Customers> {
     addressController.clear();
     pageNumberController.clear();
   }
+
+  Future<void> _deleteCustomer(BuildContext context, String customerId, double balance) async {
+    // Check if balance is zero
+    if (balance != 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please clear your dues before deleting the customer'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: const Text('Are you sure you want to delete this customer? Transaction history will be preserved for audit purposes.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      // Only delete the customer document, keep all transactions
+      await FirebaseFirestore.instance
+          .collection('customers')
+          .doc(customerId)
+          .delete();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Customer deleted successfully. Transaction history preserved.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      Navigator.of(context).pop(); // Go back to customer list
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting customer: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _setAsDefaulter(BuildContext context, String customerId, bool isDefaulter) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('customers')
+          .doc(customerId)
+          .update({
+        'is_defaulter': !isDefaulter,
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isDefaulter 
+            ? 'Customer removed from defaulter list' 
+            : 'Customer marked as defaulter'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating customer status: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 }
 
 class CustomerDetailsPage extends StatelessWidget {
   final String customerId;
 
   const CustomerDetailsPage({super.key, required this.customerId});
+
+  // Indian Numbering System formatter
+  String formatIndianNumber(double number) {
+    final formatter = NumberFormat('#,##,##,##,##0.00', 'en_IN');
+    return formatter.format(number);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -747,7 +947,7 @@ class CustomerDetailsPage extends StatelessWidget {
                               _buildInfoRow(
                                 Icons.account_balance_wallet,
                                 'Balance',
-                                'Rs. ${displayBalance.toStringAsFixed(2)}',
+                                'Rs. ${formatIndianNumber(displayBalance)}',
                                 valueColor: balanceColor,
                                 isMobile: isMobile,
                               ),
@@ -764,6 +964,55 @@ class CustomerDetailsPage extends StatelessWidget {
                             ],
                           ),
                         ),
+                      ),
+                      SizedBox(height: spacing + 4.0),
+                      // Action buttons
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _deleteCustomer(context, customerId, displayBalance),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.red,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isMobile ? 16.0 : 24.0,
+                                  vertical: isMobile ? 12.0 : 16.0,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              icon: const Icon(Icons.delete),
+                              label: Text(
+                                'Delete',
+                                style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: isMobile ? 12.0 : 16.0),
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: () => _setAsDefaulter(context, customerId, customer['is_defaulter'] ?? false),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: customer['is_defaulter'] == true ? Colors.orange : Colors.blue,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isMobile ? 16.0 : 24.0,
+                                  vertical: isMobile ? 12.0 : 16.0,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                              ),
+                              icon: Icon(customer['is_defaulter'] == true ? Icons.person_off : Icons.person_add),
+                              label: Text(
+                                customer['is_defaulter'] == true ? 'Remove Defaulter' : 'Set as Defaulter',
+                                style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                       SizedBox(height: spacing + 4.0),
                       Text(
@@ -892,21 +1141,21 @@ class CustomerDetailsPage extends StatelessWidget {
                     children: [
                       _buildTransactionRow(
                         'Previous Balance',
-                        'Rs. ${previousBalance.toStringAsFixed(2)}',
+                        'Rs. ${formatIndianNumber(previousBalance)}',
                         Colors.grey.shade700,
                         isMobile,
                       ),
                       SizedBox(height: isMobile ? 8.0 : 12.0),
                       _buildTransactionRow(
                         'Amount Paid',
-                        'Rs. ${amountPaid.toStringAsFixed(2)}',
+                        'Rs. ${formatIndianNumber(amountPaid)}',
                         Colors.green,
                         isMobile,
                       ),
                       SizedBox(height: isMobile ? 8.0 : 12.0),
                       _buildTransactionRow(
                         'Amount Taken',
-                        'Rs. ${amountTaken.toStringAsFixed(2)}',
+                        'Rs. ${formatIndianNumber(amountTaken)}',
                         Colors.red,
                         isMobile,
                       ),
@@ -915,7 +1164,7 @@ class CustomerDetailsPage extends StatelessWidget {
                       SizedBox(height: isMobile ? 8.0 : 12.0),
                       _buildTransactionRow(
                         'New Balance',
-                        'Rs. ${newBalance.toStringAsFixed(2)}',
+                        'Rs. ${formatIndianNumber(newBalance)}',
                         newBalance >= 0 ? Colors.green : Colors.red,
                         isMobile,
                         isBold: true,
@@ -953,5 +1202,94 @@ class CustomerDetailsPage extends StatelessWidget {
         ),
       ],
     );
+  }
+
+  Future<void> _deleteCustomer(BuildContext context, String customerId, double balance) async {
+    // Check if balance is zero
+    if (balance != 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please clear your dues before deleting the customer'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      return;
+    }
+
+    // Show confirmation dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Delete'),
+          content: const Text('Are you sure you want to delete this customer? Transaction history will be preserved for audit purposes.'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) return;
+
+    try {
+      // Only delete the customer document, keep all transactions
+      await FirebaseFirestore.instance
+          .collection('customers')
+          .doc(customerId)
+          .delete();
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Customer deleted successfully. Transaction history preserved.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      
+      Navigator.of(context).pop(); // Go back to customer list
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error deleting customer: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Future<void> _setAsDefaulter(BuildContext context, String customerId, bool isDefaulter) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('customers')
+          .doc(customerId)
+          .update({
+        'is_defaulter': !isDefaulter,
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(isDefaulter 
+            ? 'Customer removed from defaulter list' 
+            : 'Customer marked as defaulter'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error updating customer status: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }

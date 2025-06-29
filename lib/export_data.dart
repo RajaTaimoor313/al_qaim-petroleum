@@ -209,6 +209,8 @@ class _ExportDataState extends State<ExportData> {
         excelFile.copy('Sheet1', 'Customers');
         excelFile.copy('Sheet1', 'Transactions');
         excelFile.copy('Sheet1', 'Sales');
+        excelFile.copy('Sheet1', 'Settlements');
+        excelFile.copy('Sheet1', 'HBL Sales');
 
         // Delete the original Sheet1
         excelFile.delete('Sheet1');
@@ -217,6 +219,8 @@ class _ExportDataState extends State<ExportData> {
       final customersSheet = excelFile['Customers'];
       final transactionsSheet = excelFile['Transactions'];
       final salesSheet = excelFile['Sales'];
+      final settlementsSheet = excelFile['Settlements'];
+      final hblSalesSheet = excelFile['HBL Sales'];
 
       final customerHeaders = [
         'Name', 'Phone', 'CNIC', 'Page Number', 'Balance', 'Created Date',
@@ -240,6 +244,19 @@ class _ExportDataState extends State<ExportData> {
         'Diesel Amount (Rs)',
         'Total Amount (Rs)',
       ];
+      final settlementHeaders = [
+        'Settlement Date',
+        'Selected Sales',
+        'Total Amount',
+        'Amount Received',
+        'Expenses',
+        'Created Date',
+      ];
+      final hblSalesHeaders = [
+        'Date',
+        'Amount',
+        'Created Date',
+      ];
 
       final headerStyle = excel.CellStyle(
         bold: true,
@@ -251,6 +268,8 @@ class _ExportDataState extends State<ExportData> {
       _addHeaders(customersSheet, customerHeaders, headerStyle);
       _addHeaders(transactionsSheet, transactionHeaders, headerStyle);
       _addHeaders(salesSheet, salesHeaders, headerStyle);
+      _addHeaders(settlementsSheet, settlementHeaders, headerStyle);
+      _addHeaders(hblSalesSheet, hblSalesHeaders, headerStyle);
 
       // Fetch data from Firestore
       setState(() => statusMessage = 'Fetching data from database...');
@@ -267,11 +286,23 @@ class _ExportDataState extends State<ExportData> {
           .orderBy('date', descending: true)
           .limit(1000)
           .get();
+      final settlementsSnapshot = await FirebaseFirestore.instance
+          .collection('hbl_settlements')
+          .orderBy('timestamp', descending: true)
+          .limit(1000)
+          .get();
+      final hblSalesSnapshot = await FirebaseFirestore.instance
+          .collection('hbl_sales')
+          .orderBy('timestamp', descending: true)
+          .limit(1000)
+          .get();
 
       // Process data in batches
       await _processCustomersData(customersSnapshot, customersSheet);
       await _processTransactionsData(transactionsSnapshot, transactionsSheet);
       await _processSalesData(salesSnapshot, salesSheet);
+      await _processSettlementsData(settlementsSnapshot, settlementsSheet);
+      await _processHblSalesData(hblSalesSnapshot, hblSalesSheet);
 
       // Format columns
       for (var sheet in excelFile.sheets.values) {
@@ -433,6 +464,80 @@ class _ExportDataState extends State<ExportData> {
           data['diesel_rate']?.toString() ?? '0.0',
           data['diesel_rupees']?.toString() ?? '0.0',
           data['total_amount']?.toString() ?? '0.0',
+        ];
+
+        for (var col = 0; col < rowData.length; col++) {
+          sheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row))
+              .value = excel.TextCellValue(rowData[col]);
+        }
+        row++;
+      }
+    }
+  }
+
+  Future<void> _processSettlementsData(
+    QuerySnapshot snapshot, 
+    excel.Sheet sheet
+  ) async {
+    int row = 1;
+    const batchSize = 100;
+    final total = snapshot.docs.length;
+
+    for (int i = 0; i < total; i += batchSize) {
+      final end = (i + batchSize < total) ? i + batchSize : total;
+      setState(() {
+        statusMessage = 'Processing settlements data (${i + 1}-$end of $total)...';
+      });
+
+      for (var doc in snapshot.docs.sublist(i, end)) {
+        final data = doc.data() as Map<String, dynamic>;
+        final selectedSaleDates = data['selected_sale_dates'] as List<dynamic>? ?? [];
+        final selectedSalesString = selectedSaleDates.join(', ');
+        
+        final rowData = [
+          data['settlement_date'] != null
+              ? DateFormat('dd/MM/yyyy').format((data['settlement_date'] as Timestamp).toDate())
+              : 'N/A',
+          selectedSalesString,
+          data['total_amount']?.toString() ?? '0.0',
+          data['amount_received']?.toString() ?? '0.0',
+          data['expenses']?.toString() ?? '0.0',
+          data['timestamp'] != null
+              ? DateFormat('dd/MM/yyyy').format((data['timestamp'] as Timestamp).toDate())
+              : 'N/A',
+        ];
+
+        for (var col = 0; col < rowData.length; col++) {
+          sheet.cell(excel.CellIndex.indexByColumnRow(columnIndex: col, rowIndex: row))
+              .value = excel.TextCellValue(rowData[col]);
+        }
+        row++;
+      }
+    }
+  }
+
+  Future<void> _processHblSalesData(
+    QuerySnapshot snapshot, 
+    excel.Sheet sheet
+  ) async {
+    int row = 1;
+    const batchSize = 100;
+    final total = snapshot.docs.length;
+
+    for (int i = 0; i < total; i += batchSize) {
+      final end = (i + batchSize < total) ? i + batchSize : total;
+      setState(() {
+        statusMessage = 'Processing HBL sales data (${i + 1}-$end of $total)...';
+      });
+
+      for (var doc in snapshot.docs.sublist(i, end)) {
+        final data = doc.data() as Map<String, dynamic>;
+        final rowData = [
+          data['date'] ?? 'N/A',
+          data['amount']?.toString() ?? '0.0',
+          data['timestamp'] != null
+              ? DateFormat('dd/MM/yyyy').format((data['timestamp'] as Timestamp).toDate())
+              : 'N/A',
         ];
 
         for (var col = 0; col < rowData.length; col++) {

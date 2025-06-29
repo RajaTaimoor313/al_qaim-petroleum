@@ -36,6 +36,12 @@ class _AddDataState extends State<AddData> {
   final TextEditingController dieselRupeesController = TextEditingController();
   final TextEditingController dieselRateController = TextEditingController();
 
+  // Indian Numbering System formatter
+  String formatIndianNumber(double number) {
+    final formatter = NumberFormat('#,##,##,##,##0.00', 'en_IN');
+    return formatter.format(number);
+  }
+
   @override
   void dispose() {
     customerNameController.dispose();
@@ -736,14 +742,14 @@ class _AddDataState extends State<AddData> {
     final litres = double.tryParse(petrolLitresController.text) ?? 0.0;
     final rate = double.tryParse(petrolRateController.text) ?? 0.0;
     final rupees = litres * rate;
-    petrolRupeesController.text = rupees.toStringAsFixed(2);
+    petrolRupeesController.text = formatIndianNumber(rupees);
   }
 
   void _calculateDieselRupees() {
     final litres = double.tryParse(dieselLitresController.text) ?? 0.0;
     final rate = double.tryParse(dieselRateController.text) ?? 0.0;
     final rupees = litres * rate;
-    dieselRupeesController.text = rupees.toStringAsFixed(2);
+    dieselRupeesController.text = formatIndianNumber(rupees);
   }
 
   void _resetSalesForm() {
@@ -781,16 +787,16 @@ class _AddDataState extends State<AddData> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text('Petrol:'),
-                  Text('  Litres: ${petrolLitres.toStringAsFixed(2)} L'),
-                  Text('  Rate: Rs. ${petrolRate.toStringAsFixed(2)}/L'),
-                  Text('  Amount: Rs. ${petrolRupees.toStringAsFixed(2)}'),
+                  Text('  Litres: ${formatIndianNumber(petrolLitres)} L'),
+                  Text('  Rate: Rs. ${formatIndianNumber(petrolRate)}/L'),
+                  Text('  Amount: Rs. ${formatIndianNumber(petrolRupees)}'),
                   const SizedBox(height: 8),
                   Text('Diesel:'),
-                  Text('  Litres: ${dieselLitres.toStringAsFixed(2)} L'),
-                  Text('  Rate: Rs. ${dieselRate.toStringAsFixed(2)}/L'),
-                  Text('  Amount: Rs. ${dieselRupees.toStringAsFixed(2)}'),
+                  Text('  Litres: ${formatIndianNumber(dieselLitres)} L'),
+                  Text('  Rate: Rs. ${formatIndianNumber(dieselRate)}/L'),
+                  Text('  Amount: Rs. ${formatIndianNumber(dieselRupees)}'),
                   const Divider(),
-                  Text('Total Amount: Rs. ${totalAmount.toStringAsFixed(2)}'),
+                  Text('Total Amount: Rs. ${formatIndianNumber(totalAmount)}'),
                 ],
               ),
               actions: [
@@ -1078,10 +1084,10 @@ class _AddDataState extends State<AddData> {
                 children: [
                   Text('Customer: $customerName'),
                   Text('Phone: $phone'),
-                  Text('Previous Balance: Rs. ${previousBalance.toStringAsFixed(2)}'),
-                  Text('Amount Paid: Rs. ${amountPaid.toStringAsFixed(2)}'),
-                  Text('Amount Taken: Rs. ${amountTaken.toStringAsFixed(2)}'),
-                  Text('New Balance: Rs. ${newBalance.toStringAsFixed(2)}'),
+                  Text('Previous Balance: Rs. ${formatIndianNumber(previousBalance)}'),
+                  Text('Amount Paid: Rs. ${formatIndianNumber(amountPaid)}'),
+                  Text('Amount Taken: Rs. ${formatIndianNumber(amountTaken)}'),
+                  Text('New Balance: Rs. ${formatIndianNumber(newBalance)}'),
                 ],
               ),
               actions: [
