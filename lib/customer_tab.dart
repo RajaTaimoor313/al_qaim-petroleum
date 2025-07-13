@@ -439,7 +439,13 @@ class _CustomersState extends State<Customers> {
   Widget _buildCustomersList(bool isMobile) {
     return Expanded(
       child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('customers').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('customers')
+            .snapshots()
+            .handleError((error) {
+          debugPrint('Error in customers stream: $error');
+          return null;
+        }),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

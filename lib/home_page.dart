@@ -7,6 +7,7 @@ import 'dash_board_tab.dart';
 import 'data_entry_tab.dart';
 import 'export_data.dart';
 import 'hbl_pos_tab.dart';
+import 'stock_tab.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'package:google_fonts/google_fonts.dart';
@@ -276,107 +277,81 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
             ],
           ),
         ),
-        ListTile(
-          leading: const Icon(Icons.dashboard, color: Colors.white),
-          title: Text(
-            'Dashboard',
-            style: GoogleFonts.lato(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          selected: _selectedIndex == 0,
-          onTap: () {
-            setState(() {
-              _selectedIndex = 0;
-            });
-            if (MediaQuery.of(context).size.width < 600) {
-              Navigator.pop(context);
-            }
-          },
+        _buildNavigationItem(
+          icon: Icons.dashboard,
+          title: 'Dashboard',
+          index: 0,
         ),
-        ListTile(
-          leading: const Icon(Icons.add_chart, color: Colors.white),
-          title: Text(
-            'Add Data',
-            style: GoogleFonts.lato(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          selected: _selectedIndex == 1,
-          onTap: () {
-            setState(() {
-              _selectedIndex = 1;
-            });
-            if (MediaQuery.of(context).size.width < 600) {
-              Navigator.pop(context);
-            }
-          },
+        _buildNavigationItem(
+          icon: Icons.add_chart,
+          title: 'Add Data',
+          index: 1,
         ),
-        ListTile(
-          leading: const Icon(Icons.people, color: Colors.white),
-          title: Text(
-            'Customers',
-            style: GoogleFonts.lato(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          selected: _selectedIndex == 2,
-          onTap: () {
-            setState(() {
-              _selectedIndex = 2;
-            });
-            if (MediaQuery.of(context).size.width < 600) {
-              Navigator.pop(context);
-            }
-          },
+        _buildNavigationItem(
+          icon: Icons.people,
+          title: 'Customers',
+          index: 2,
         ),
-        ListTile(
-          leading: const Icon(Icons.point_of_sale, color: Colors.white),
-          title: Text(
-            'HBL Point of Sale',
-            style: GoogleFonts.lato(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          selected: _selectedIndex == 3,
-          onTap: () {
-            setState(() {
-              _selectedIndex = 3;
-            });
-            if (MediaQuery.of(context).size.width < 600) {
-              Navigator.pop(context);
-            }
-          },
+        _buildNavigationItem(
+          icon: Icons.point_of_sale,
+          title: 'HBL Point of Sale',
+          index: 3,
         ),
-        ListTile(
-          leading: const Icon(Icons.file_download, color: Colors.white),
-          title: Text(
-            'Export',
-            style: GoogleFonts.lato(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          selected: _selectedIndex == 4,
-          onTap: () {
-            setState(() {
-              _selectedIndex = 4;
-            });
-            if (MediaQuery.of(context).size.width < 600) {
-              Navigator.pop(context);
-            }
-          },
+        _buildNavigationItem(
+          icon: Icons.inventory,
+          title: 'Stock',
+          index: 4,
+        ),
+        _buildNavigationItem(
+          icon: Icons.file_download,
+          title: 'Export',
+          index: 5,
         ),
       ],
+    );
+  }
+
+  Widget _buildNavigationItem({
+    required IconData icon,
+    required String title,
+    required int index,
+  }) {
+    final bool isSelected = _selectedIndex == index;
+    
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+      decoration: BoxDecoration(
+        color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+        borderRadius: BorderRadius.circular(8.0),
+        border: isSelected 
+          ? Border.all(color: Colors.white.withOpacity(0.3), width: 1.0)
+          : null,
+      ),
+      child: ListTile(
+        leading: Icon(
+          icon,
+          color: isSelected ? Colors.white : Colors.white.withOpacity(0.8),
+          size: isSelected ? 26 : 24,
+        ),
+        title: Text(
+          title,
+          style: GoogleFonts.lato(
+            color: isSelected ? Colors.white : Colors.white.withOpacity(0.9),
+            fontSize: 16,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+          ),
+        ),
+        selected: isSelected,
+        selectedTileColor: Colors.transparent,
+        onTap: () {
+          setState(() {
+            _selectedIndex = index;
+          });
+          if (MediaQuery.of(context).size.width < 600) {
+            Navigator.pop(context);
+          }
+        },
+      ),
     );
   }
 
@@ -399,6 +374,8 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
       case 3:
         return const HBLPointOfSale();
       case 4:
+        return const StockTab();
+      case 5:
         return const ExportData();
       default:
         return const Dashboard();

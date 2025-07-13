@@ -770,10 +770,11 @@ class _AddDataState extends State<AddData> {
       try {
         final petrolLitres = double.tryParse(petrolLitresController.text) ?? 0.0;
         final petrolRate = double.tryParse(petrolRateController.text) ?? 0.0;
-        final petrolRupees = double.tryParse(petrolRupeesController.text) ?? 0.0;
         final dieselLitres = double.tryParse(dieselLitresController.text) ?? 0.0;
         final dieselRate = double.tryParse(dieselRateController.text) ?? 0.0;
-        final dieselRupees = double.tryParse(dieselRupeesController.text) ?? 0.0;
+        // Calculate rupees directly instead of parsing formatted text
+        final petrolRupees = petrolLitres * petrolRate;
+        final dieselRupees = dieselLitres * dieselRate;
         final totalAmount = petrolRupees + dieselRupees;
 
         // Show confirmation dialog
@@ -826,6 +827,17 @@ class _AddDataState extends State<AddData> {
             'date': Timestamp.now(),
             'custom_date': Timestamp.fromDate(selectedDate),
           });
+
+          // Subtract sold litres from stock by adding a negative entry to 'stock' collection
+          if (petrolLitres > 0 || dieselLitres > 0) {
+            await FirebaseFirestore.instance.collection('stock').add({
+              'date': Timestamp.fromDate(selectedDate),
+              'petrol': -petrolLitres,
+              'diesel': -dieselLitres,
+              'created_at': Timestamp.now(),
+              'source': 'sale',
+            });
+          }
 
           // Show success message
           if (mounted) {

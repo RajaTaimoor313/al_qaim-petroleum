@@ -24,9 +24,18 @@ void main() async {
       host: null,
       sslEnabled: true,
     );
+    
+    // Configure Firebase Firestore for better thread safety
+    FirebaseFirestore.instance.enablePersistence(const PersistenceSettings(synchronizeTabs: true));
   } catch (e) {
     debugPrint('Firebase initialization error: ${e.toString().split('\n')[0]}');
   }
+  
+  // Set up error handling for Firebase operations
+  FlutterError.onError = (FlutterErrorDetails details) {
+    debugPrint('Flutter error: ${details.exception}');
+  };
+  
   runApp(const MyApp());
 }
 

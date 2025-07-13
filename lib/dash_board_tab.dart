@@ -98,50 +98,60 @@ class _DashboardState extends State<Dashboard> {
         59,
       );
 
-      final transactionsQuery =
-          FirebaseFirestore.instance.collection('transactions')
-            .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-            .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
-            .limit(100)
-            .get();
-            
-      final customersQuery =
-          FirebaseFirestore.instance.collection('customers')
-            .limit(100)
-            .get();
-            
-      final salesQuery = FirebaseFirestore.instance.collection('sales')
-            .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-            .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
-            .limit(100)
-            .get();
+      // Use try-catch for each query to handle individual failures
+      QuerySnapshot? transactionsSnapshot;
+      QuerySnapshot? customersSnapshot;
+      QuerySnapshot? salesSnapshot;
 
-      final results = await Future.wait([
-        transactionsQuery,
-        customersQuery,
-        salesQuery,
-      ]);
+      try {
+        transactionsSnapshot = await FirebaseFirestore.instance.collection('transactions')
+          .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+          .limit(100)
+          .get();
+      } catch (e) {
+        debugPrint('Error fetching transactions: $e');
+        transactionsSnapshot = null;
+      }
+
+      try {
+        customersSnapshot = await FirebaseFirestore.instance.collection('customers')
+          .limit(100)
+          .get();
+      } catch (e) {
+        debugPrint('Error fetching customers: $e');
+        customersSnapshot = null;
+      }
+
+      try {
+        salesSnapshot = await FirebaseFirestore.instance.collection('sales')
+          .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
+          .limit(100)
+          .get();
+      } catch (e) {
+        debugPrint('Error fetching sales: $e');
+        salesSnapshot = null;
+      }
 
       if (!mounted) return;
-
-      final transactionsSnapshot = results[0];
-      final customersSnapshot = results[1];
-      final salesSnapshot = results[2];
 
       double dailyCredits = 0;
       double dailyRecovery = 0;
       List<Map<String, dynamic>> filteredTransactions = [];
 
       // Process transactions
-      for (var doc in transactionsSnapshot.docs) {
-        final data = doc.data();
-        final amountPaid = data['amount_paid'] is num ? (data['amount_paid'] as num).toDouble() : 0.0;
-        final amountTaken = data['amount_taken'] is num ? (data['amount_taken'] as num).toDouble() : 0.0;
-        
-        dailyCredits += amountTaken;
-        dailyRecovery += amountPaid;
-        
-        filteredTransactions.add(data);
+      if (transactionsSnapshot != null) {
+        for (var doc in transactionsSnapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          final amountPaid = data['amount_paid'] is num ? (data['amount_paid'] as num).toDouble() : 0.0;
+          final amountTaken = data['amount_taken'] is num ? (data['amount_taken'] as num).toDouble() : 0.0;
+          
+          dailyCredits += amountTaken;
+          dailyRecovery += amountPaid;
+          
+          filteredTransactions.add(data);
+        }
       }
 
       // Process sales data
@@ -150,19 +160,23 @@ class _DashboardState extends State<Dashboard> {
       double totalDieselLitres = 0;
       double totalDieselRupees = 0;
 
-      for (var doc in salesSnapshot.docs) {
-        final data = doc.data();
-        totalPetrolLitres += data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
-        totalPetrolRupees += data['petrol_rupees'] is num ? (data['petrol_rupees'] as num).toDouble() : 0.0;
-        totalDieselLitres += data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
-        totalDieselRupees += data['diesel_rupees'] is num ? (data['diesel_rupees'] as num).toDouble() : 0.0;
+      if (salesSnapshot != null) {
+        for (var doc in salesSnapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          totalPetrolLitres += data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+          totalPetrolRupees += data['petrol_rupees'] is num ? (data['petrol_rupees'] as num).toDouble() : 0.0;
+          totalDieselLitres += data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+          totalDieselRupees += data['diesel_rupees'] is num ? (data['diesel_rupees'] as num).toDouble() : 0.0;
+        }
       }
 
       // Calculate total receivable amount from customers
       double totalReceivable = 0;
-      for (var doc in customersSnapshot.docs) {
-        final data = doc.data();
-        totalReceivable += data['balance'] is num ? (data['balance'] as num).toDouble() : 0.0;
+      if (customersSnapshot != null) {
+        for (var doc in customersSnapshot.docs) {
+          final data = doc.data() as Map<String, dynamic>;
+          totalReceivable += data['balance'] is num ? (data['balance'] as num).toDouble() : 0.0;
+        }
       }
 
       if (!mounted) return;
@@ -215,13 +229,19 @@ class _DashboardState extends State<Dashboard> {
           final endOfRange = DateTime(now.year, now.month, now.day + 2, 23, 59, 59);
           
           // Use server-side filtering and limit
-          final allSalesSnapshot = await FirebaseFirestore.instance
-              .collection('sales')
-              .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
-              .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
-              .orderBy('custom_date')
-              .limit(200)
-              .get();
+          QuerySnapshot? allSalesSnapshot;
+          try {
+            allSalesSnapshot = await FirebaseFirestore.instance
+                .collection('sales')
+                .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+                .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+                .orderBy('custom_date')
+                .limit(200)
+                .get();
+          } catch (e) {
+            debugPrint('Error fetching daily sales data: $e');
+            allSalesSnapshot = null;
+          }
               
           // Create a map with data aggregated by day
           Map<String, MonthlyData> dailyData = {};
@@ -242,26 +262,28 @@ class _DashboardState extends State<Dashboard> {
           }
           
           // Fill in actual data
-          for (var doc in allSalesSnapshot.docs) {
-            final data = doc.data();
-            final saleDate = data['date'] as Timestamp?;
-            
-            if (saleDate != null) {
-              final saleDateTimeUTC = saleDate.toDate();
-              // Only process data for the 5 days we care about
-              if (saleDateTimeUTC.day >= now.day - 3 && 
-                  saleDateTimeUTC.day <= now.day + 1 &&
-                  saleDateTimeUTC.month == now.month &&
-                  saleDateTimeUTC.year == now.year) {
-                
-                final dayKey = '${saleDateTimeUTC.year}-${saleDateTimeUTC.month}-${saleDateTimeUTC.day}';
-                
-                final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
-                final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
-                
-                if (dailyData.containsKey(dayKey)) {
-                  dailyData[dayKey]!.petrolLitres += petrolLitres;
-                  dailyData[dayKey]!.dieselLitres += dieselLitres;
+          if (allSalesSnapshot != null) {
+            for (var doc in allSalesSnapshot.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final saleDate = data['date'] as Timestamp?;
+              
+              if (saleDate != null) {
+                final saleDateTimeUTC = saleDate.toDate();
+                // Only process data for the 5 days we care about
+                if (saleDateTimeUTC.day >= now.day - 3 && 
+                    saleDateTimeUTC.day <= now.day + 1 &&
+                    saleDateTimeUTC.month == now.month &&
+                    saleDateTimeUTC.year == now.year) {
+                  
+                  final dayKey = '${saleDateTimeUTC.year}-${saleDateTimeUTC.month}-${saleDateTimeUTC.day}';
+                  
+                  final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+                  final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+                  
+                  if (dailyData.containsKey(dayKey)) {
+                    dailyData[dayKey]!.petrolLitres += petrolLitres;
+                    dailyData[dayKey]!.dieselLitres += dieselLitres;
+                  }
                 }
               }
             }
@@ -308,13 +330,19 @@ class _DashboardState extends State<Dashboard> {
           final startOfRange = weekStarts.first.subtract(const Duration(days: 1));
           final endOfRange = weekStarts.last.add(const Duration(days: 8));
           
-          final allSalesSnapshot = await FirebaseFirestore.instance
-              .collection('sales')
-              .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
-              .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
-              .orderBy('custom_date')
-              .limit(500)
-              .get();
+          QuerySnapshot? allSalesSnapshot;
+          try {
+            allSalesSnapshot = await FirebaseFirestore.instance
+                .collection('sales')
+                .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+                .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+                .orderBy('custom_date')
+                .limit(500)
+                .get();
+          } catch (e) {
+            debugPrint('Error fetching weekly sales data: $e');
+            allSalesSnapshot = null;
+          }
               
           // Initialize weekly data with the 5 weeks we want to display
           final Map<int, MonthlyData> weeklyData = {};
@@ -332,27 +360,29 @@ class _DashboardState extends State<Dashboard> {
           }
           
           // Process sales data and aggregate by week
-          for (var doc in allSalesSnapshot.docs) {
-            final data = doc.data();
-            final saleDate = data['date'] as Timestamp?;
-            
-            if (saleDate != null) {
-              final saleDateTimeUTC = saleDate.toDate();
+          if (allSalesSnapshot != null) {
+            for (var doc in allSalesSnapshot.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final saleDate = data['date'] as Timestamp?;
               
-              // Find which week this date belongs to
-              for (int i = 0; i < weekStarts.length; i++) {
-                final weekStart = weekStarts[i];
-                final weekEnd = weekStart.add(const Duration(days: 6));
+              if (saleDate != null) {
+                final saleDateTimeUTC = saleDate.toDate();
                 
-                if (saleDateTimeUTC.isAfter(weekStart.subtract(const Duration(seconds: 1))) && 
-                    saleDateTimeUTC.isBefore(weekEnd.add(const Duration(days: 1)))) {
+                // Find which week this date belongs to
+                for (int i = 0; i < weekStarts.length; i++) {
+                  final weekStart = weekStarts[i];
+                  final weekEnd = weekStart.add(const Duration(days: 6));
                   
-                  final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
-                  final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
-                  
-                  weeklyData[i]!.petrolLitres += petrolLitres;
-                  weeklyData[i]!.dieselLitres += dieselLitres;
-                  break;
+                  if (saleDateTimeUTC.isAfter(weekStart.subtract(const Duration(seconds: 1))) && 
+                      saleDateTimeUTC.isBefore(weekEnd.add(const Duration(days: 1)))) {
+                    
+                    final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+                    final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+                    
+                    weeklyData[i]!.petrolLitres += petrolLitres;
+                    weeklyData[i]!.dieselLitres += dieselLitres;
+                    break;
+                  }
                 }
               }
             }
@@ -400,13 +430,19 @@ class _DashboardState extends State<Dashboard> {
             23, 59, 59
           ); // Last day of the last month
           
-          final allSalesSnapshot = await FirebaseFirestore.instance
-              .collection('sales')
-              .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
-              .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
-              .orderBy('custom_date')
-              .limit(1000)
-              .get();
+          QuerySnapshot? allSalesSnapshot;
+          try {
+            allSalesSnapshot = await FirebaseFirestore.instance
+                .collection('sales')
+                .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+                .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+                .orderBy('custom_date')
+                .limit(1000)
+                .get();
+          } catch (e) {
+            debugPrint('Error fetching monthly sales data: $e');
+            allSalesSnapshot = null;
+          }
               
           // Initialize monthly data with the 5 months we want to display
           final Map<int, MonthlyData> monthlyDataMap = {};
@@ -424,29 +460,31 @@ class _DashboardState extends State<Dashboard> {
           }
           
           // Process sales data and aggregate by month
-          for (var doc in allSalesSnapshot.docs) {
-            final data = doc.data();
-            final saleDate = data['date'] as Timestamp?;
-            
-            if (saleDate != null) {
-              final saleDateTimeUTC = saleDate.toDate();
+          if (allSalesSnapshot != null) {
+            for (var doc in allSalesSnapshot.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final saleDate = data['date'] as Timestamp?;
               
-              // Find which month this date belongs to
-              for (int i = 0; i < monthStarts.length; i++) {
-                final monthStart = monthStarts[i];
-                final monthEnd = (i < monthStarts.length - 1) 
-                    ? monthStarts[i + 1].subtract(const Duration(seconds: 1))
-                    : DateTime(monthStart.year, monthStart.month + 1, 0, 23, 59, 59);
+              if (saleDate != null) {
+                final saleDateTimeUTC = saleDate.toDate();
                 
-                if (saleDateTimeUTC.isAfter(monthStart.subtract(const Duration(seconds: 1))) && 
-                    saleDateTimeUTC.isBefore(monthEnd.add(const Duration(seconds: 1)))) {
+                // Find which month this date belongs to
+                for (int i = 0; i < monthStarts.length; i++) {
+                  final monthStart = monthStarts[i];
+                  final monthEnd = (i < monthStarts.length - 1) 
+                      ? monthStarts[i + 1].subtract(const Duration(seconds: 1))
+                      : DateTime(monthStart.year, monthStart.month + 1, 0, 23, 59, 59);
                   
-                  final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
-                  final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
-                  
-                  monthlyDataMap[i]!.petrolLitres += petrolLitres;
-                  monthlyDataMap[i]!.dieselLitres += dieselLitres;
-                  break;
+                  if (saleDateTimeUTC.isAfter(monthStart.subtract(const Duration(seconds: 1))) && 
+                      saleDateTimeUTC.isBefore(monthEnd.add(const Duration(seconds: 1)))) {
+                    
+                    final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+                    final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+                    
+                    monthlyDataMap[i]!.petrolLitres += petrolLitres;
+                    monthlyDataMap[i]!.dieselLitres += dieselLitres;
+                    break;
+                  }
                 }
               }
             }
@@ -475,13 +513,19 @@ class _DashboardState extends State<Dashboard> {
           final startOfRange = DateTime(years.first, 1, 1);
           final endOfRange = DateTime(years.last, 12, 31, 23, 59, 59);
           
-          final allSalesSnapshot = await FirebaseFirestore.instance
-              .collection('sales')
-              .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
-              .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
-              .orderBy('custom_date')
-              .limit(2000)
-              .get();
+          QuerySnapshot? allSalesSnapshot;
+          try {
+            allSalesSnapshot = await FirebaseFirestore.instance
+                .collection('sales')
+                .where('custom_date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfRange))
+                .where('custom_date', isLessThanOrEqualTo: Timestamp.fromDate(endOfRange))
+                .orderBy('custom_date')
+                .limit(2000)
+                .get();
+          } catch (e) {
+            debugPrint('Error fetching annual sales data: $e');
+            allSalesSnapshot = null;
+          }
               
           // Initialize yearly data with the 5 years we want to display
           final Map<int, MonthlyData> yearlyData = {};
@@ -498,23 +542,25 @@ class _DashboardState extends State<Dashboard> {
           }
           
           // Process sales data and aggregate by year
-          for (var doc in allSalesSnapshot.docs) {
-            final data = doc.data();
-            final saleDate = data['date'] as Timestamp?;
-            
-            if (saleDate != null) {
-              final saleDateTimeUTC = saleDate.toDate();
-              final year = saleDateTimeUTC.year;
+          if (allSalesSnapshot != null) {
+            for (var doc in allSalesSnapshot.docs) {
+              final data = doc.data() as Map<String, dynamic>;
+              final saleDate = data['date'] as Timestamp?;
               
-              // Find which of our 5 years this date belongs to
-              for (int i = 0; i < years.length; i++) {
-                if (year == years[i]) {
-                  final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
-                  final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
-                  
-                  yearlyData[i]!.petrolLitres += petrolLitres;
-                  yearlyData[i]!.dieselLitres += dieselLitres;
-                  break;
+              if (saleDate != null) {
+                final saleDateTimeUTC = saleDate.toDate();
+                final year = saleDateTimeUTC.year;
+                
+                // Find which of our 5 years this date belongs to
+                for (int i = 0; i < years.length; i++) {
+                  if (year == years[i]) {
+                    final petrolLitres = data['petrol_litres'] is num ? (data['petrol_litres'] as num).toDouble() : 0.0;
+                    final dieselLitres = data['diesel_litres'] is num ? (data['diesel_litres'] as num).toDouble() : 0.0;
+                    
+                    yearlyData[i]!.petrolLitres += petrolLitres;
+                    yearlyData[i]!.dieselLitres += dieselLitres;
+                    break;
+                  }
                 }
               }
             }

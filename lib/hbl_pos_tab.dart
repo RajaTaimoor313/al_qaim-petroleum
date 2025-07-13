@@ -389,7 +389,13 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
   Widget _buildSalesList(bool isMobile) {
     return Expanded(
       child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('hbl_sales').snapshots(),
+        stream: FirebaseFirestore.instance
+            .collection('hbl_sales')
+            .snapshots()
+            .handleError((error) {
+          debugPrint('Error in hbl_sales stream: $error');
+          return null;
+        }),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -420,7 +426,13 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
 
           // Get settled sales from settlements collection using StreamBuilder
           return StreamBuilder<QuerySnapshot>(
-            stream: FirebaseFirestore.instance.collection('hbl_settlements').snapshots(),
+            stream: FirebaseFirestore.instance
+                .collection('hbl_settlements')
+                .snapshots()
+                .handleError((error) {
+              debugPrint('Error in hbl_settlements stream: $error');
+              return null;
+            }),
             builder: (context, settlementsSnapshot) {
               Set<String> settledSaleIds = {};
               
