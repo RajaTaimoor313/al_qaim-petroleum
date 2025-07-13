@@ -489,7 +489,7 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                       final index = entry.key;
                       final sale = entry.value;
                       return _buildSaleCard(sale, index, unsettledSales.length, isMobile, false);
-                    }).toList(),
+                    }),
                     SizedBox(height: 16),
                   ],
                   
@@ -524,7 +524,7 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                       final index = entry.key;
                       final sale = entry.value;
                       return _buildSaleCard(sale, index, settledSales.length, isMobile, true);
-                    }).toList(),
+                    }),
                   ],
                 ],
               );

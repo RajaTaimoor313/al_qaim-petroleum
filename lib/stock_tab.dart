@@ -79,7 +79,6 @@ class _StockTabState extends State<StockTab> {
   }
 
   Widget _buildAddForm(bool isMobile, double spacing, double maxWidth) {
-    final double fieldWidth = isMobile ? double.infinity : (maxWidth / 2) - spacing * 0.75;
     return Center(
       child: Container(
         padding: EdgeInsets.all(isMobile ? 12 : 24),
@@ -448,8 +447,8 @@ class _StockTabState extends State<StockTab> {
             children: [
               CircleAvatar(
                 backgroundColor: color.withOpacity(0.12),
-                child: Icon(icon, color: color, size: 28),
                 radius: 24,
+                child: Icon(icon, color: color, size: 28),
               ),
               const SizedBox(width: 18),
               Expanded(
@@ -459,7 +458,7 @@ class _StockTabState extends State<StockTab> {
                     Text(label, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: color)),
                     const SizedBox(height: 6),
                     Text(
-                      NumberFormat('#,##,##,##,##0.00', 'en_IN').format(value) + ' L',
+                      '${NumberFormat('#,##,##,##,##0.00', 'en_IN').format(value)} L',
                       style: TextStyle(fontWeight: FontWeight.w600, fontSize: 20, color: color),
                     ),
                   ],
