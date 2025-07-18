@@ -17,10 +17,11 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
   final TextEditingController dateController = TextEditingController();
   final TextEditingController amountController = TextEditingController();
   final TextEditingController searchController = TextEditingController();
-  final TextEditingController amountReceivedController = TextEditingController();
+  final TextEditingController amountReceivedController =
+      TextEditingController();
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
-  
+
   // Settlement related state
   Set<String> selectedSales = {};
   bool isSettlementMode = false;
@@ -80,18 +81,18 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                 Row(
                   children: [
                     ElevatedButton.icon(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() {
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
                                 isAddingSale = true;
                                 isViewingSales = false;
                                 isViewingSettlements = false;
                                 _clearForm();
                               }),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isAddingSale
-                            ? Colors.green.shade700
-                            : Colors.green,
+                        backgroundColor:
+                            isAddingSale ? Colors.green.shade700 : Colors.green,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -105,9 +106,10 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                     ),
                     SizedBox(width: buttonSpacing),
                     ElevatedButton.icon(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() {
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
                                 isAddingSale = false;
                                 isViewingSales = true;
                                 isViewingSettlements = false;
@@ -115,9 +117,10 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                                 isSettlementMode = false;
                               }),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isViewingSales
-                            ? Colors.green.shade700
-                            : Colors.green,
+                        backgroundColor:
+                            isViewingSales
+                                ? Colors.green.shade700
+                                : Colors.green,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -131,9 +134,10 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                     ),
                     SizedBox(width: buttonSpacing),
                     ElevatedButton.icon(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() {
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
                                 isAddingSale = false;
                                 isViewingSales = false;
                                 isViewingSettlements = true;
@@ -141,9 +145,10 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                                 isSettlementMode = false;
                               }),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: isViewingSettlements
-                            ? Colors.green.shade700
-                            : Colors.green,
+                        backgroundColor:
+                            isViewingSettlements
+                                ? Colors.green.shade700
+                                : Colors.green,
                         foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
@@ -161,9 +166,10 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                 Row(
                   children: [
                     IconButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() {
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
                                 isAddingSale = true;
                                 isViewingSales = false;
                                 isViewingSettlements = false;
@@ -171,16 +177,16 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                               }),
                       icon: Icon(
                         Icons.add_shopping_cart,
-                        color: isAddingSale
-                            ? Colors.green.shade700
-                            : Colors.green,
+                        color:
+                            isAddingSale ? Colors.green.shade700 : Colors.green,
                       ),
                       tooltip: 'Add Sale',
                     ),
                     IconButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() {
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
                                 isAddingSale = false;
                                 isViewingSales = true;
                                 isViewingSettlements = false;
@@ -189,16 +195,18 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                               }),
                       icon: Icon(
                         Icons.receipt_long,
-                        color: isViewingSales
-                            ? Colors.green.shade700
-                            : Colors.green,
+                        color:
+                            isViewingSales
+                                ? Colors.green.shade700
+                                : Colors.green,
                       ),
                       tooltip: 'View Sales',
                     ),
                     IconButton(
-                      onPressed: _isLoading
-                          ? null
-                          : () => setState(() {
+                      onPressed:
+                          _isLoading
+                              ? null
+                              : () => setState(() {
                                 isAddingSale = false;
                                 isViewingSales = false;
                                 isViewingSettlements = true;
@@ -207,9 +215,10 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                               }),
                       icon: Icon(
                         Icons.account_balance_wallet,
-                        color: isViewingSettlements
-                            ? Colors.green.shade700
-                            : Colors.green,
+                        color:
+                            isViewingSettlements
+                                ? Colors.green.shade700
+                                : Colors.green,
                       ),
                       tooltip: 'View Settlements',
                     ),
@@ -218,8 +227,7 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
             ],
           ),
           SizedBox(height: isMobile ? 12.0 : 20.0),
-          if (isAddingSale)
-            Expanded(child: _buildAddSaleForm(isMobile)),
+          if (isAddingSale) Expanded(child: _buildAddSaleForm(isMobile)),
           if (isViewingSales) ...[
             Row(
               children: [
@@ -239,15 +247,20 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                         horizontal: isMobile ? 12.0 : 16.0,
                       ),
                     ),
-                    onChanged: (value) =>
-                        setState(() => searchQuery = value.toLowerCase()),
+                    onChanged:
+                        (value) =>
+                            setState(() => searchQuery = value.toLowerCase()),
                   ),
                 ),
                 SizedBox(width: isMobile ? 8.0 : 12.0),
                 ElevatedButton(
-                  onPressed: selectedSales.isEmpty ? null : () => _showSettlementDialog(context),
+                  onPressed:
+                      selectedSales.isEmpty
+                          ? null
+                          : () => _showSettlementDialog(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: selectedSales.isEmpty ? Colors.grey : Colors.blue,
+                    backgroundColor:
+                        selectedSales.isEmpty ? Colors.grey : Colors.blue,
                     foregroundColor: Colors.white,
                     padding: EdgeInsets.symmetric(
                       horizontal: isMobile ? 12.0 : 16.0,
@@ -321,12 +334,13 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                 );
                 if (picked != null) {
                   setState(() {
-                    dateController.text = '${picked.day}/${picked.month}/${picked.year}';
+                    dateController.text =
+                        '${picked.day}/${picked.month}/${picked.year}';
                   });
                 }
               },
-              validator: (value) =>
-                  value!.isEmpty ? 'Please select a date' : null,
+              validator:
+                  (value) => value!.isEmpty ? 'Please select a date' : null,
             ),
             SizedBox(height: spacing),
             TextFormField(
@@ -364,19 +378,20 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
-                child: _isLoading
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
+                child:
+                    _isLoading
+                        ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                        : Text(
+                          'Submit Sale',
+                          style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
                         ),
-                      )
-                    : Text(
-                        'Submit Sale',
-                        style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
-                      ),
               ),
             ),
             SizedBox(height: spacing * 4),
@@ -393,9 +408,9 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
             .collection('hbl_sales')
             .snapshots()
             .handleError((error) {
-          debugPrint('Error in hbl_sales stream: $error');
-          return null;
-        }),
+              debugPrint('Error in hbl_sales stream: $error');
+              return null;
+            }),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -418,11 +433,12 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
           }
 
           // Get all sales and filter by search
-          final allSales = snapshot.data!.docs.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final date = data['date']?.toLowerCase() ?? '';
-            return date.contains(searchQuery);
-          }).toList();
+          final allSales =
+              snapshot.data!.docs.where((doc) {
+                final data = doc.data() as Map<String, dynamic>;
+                final date = data['date']?.toLowerCase() ?? '';
+                return date.contains(searchQuery);
+              }).toList();
 
           // Get settled sales from settlements collection using StreamBuilder
           return StreamBuilder<QuerySnapshot>(
@@ -430,16 +446,17 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                 .collection('hbl_settlements')
                 .snapshots()
                 .handleError((error) {
-              debugPrint('Error in hbl_settlements stream: $error');
-              return null;
-            }),
+                  debugPrint('Error in hbl_settlements stream: $error');
+                  return null;
+                }),
             builder: (context, settlementsSnapshot) {
               Set<String> settledSaleIds = {};
-              
+
               if (settlementsSnapshot.hasData) {
                 for (var settlement in settlementsSnapshot.data!.docs) {
                   final data = settlement.data() as Map<String, dynamic>;
-                  final selectedSales = data['selected_sales'] as List<dynamic>? ?? [];
+                  final selectedSales =
+                      data['selected_sales'] as List<dynamic>? ?? [];
                   settledSaleIds.addAll(selectedSales.cast<String>());
                 }
               }
@@ -488,11 +505,17 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                     ...unsettledSales.asMap().entries.map((entry) {
                       final index = entry.key;
                       final sale = entry.value;
-                      return _buildSaleCard(sale, index, unsettledSales.length, isMobile, false);
+                      return _buildSaleCard(
+                        sale,
+                        index,
+                        unsettledSales.length,
+                        isMobile,
+                        false,
+                      );
                     }),
                     SizedBox(height: 16),
                   ],
-                  
+
                   // Settled Sales Section
                   if (settledSales.isNotEmpty) ...[
                     Container(
@@ -506,7 +529,10 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.check_circle, color: Colors.green.shade700),
+                          Icon(
+                            Icons.check_circle,
+                            color: Colors.green.shade700,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'Settled Sales (${settledSales.length})',
@@ -523,7 +549,13 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                     ...settledSales.asMap().entries.map((entry) {
                       final index = entry.key;
                       final sale = entry.value;
-                      return _buildSaleCard(sale, index, settledSales.length, isMobile, true);
+                      return _buildSaleCard(
+                        sale,
+                        index,
+                        settledSales.length,
+                        isMobile,
+                        true,
+                      );
                     }),
                   ],
                 ],
@@ -535,36 +567,41 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
     );
   }
 
-  Widget _buildSaleCard(DocumentSnapshot sale, int index, int totalLength, bool isMobile, bool isSettled) {
+  Widget _buildSaleCard(
+    DocumentSnapshot sale,
+    int index,
+    int totalLength,
+    bool isMobile,
+    bool isSettled,
+  ) {
     final data = sale.data() as Map<String, dynamic>;
     final amount = data['amount']?.toDouble() ?? 0.0;
 
     return Card(
       margin: EdgeInsets.symmetric(vertical: isMobile ? 4.0 : 8.0),
       elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: ListTile(
         contentPadding: EdgeInsets.symmetric(
           vertical: isMobile ? 8.0 : 16.0,
           horizontal: isMobile ? 12.0 : 16.0,
         ),
-        leading: isSettled 
-          ? Icon(Icons.check_circle, color: Colors.green, size: 24)
-          : Checkbox(
-              value: selectedSales.contains(sale.id),
-              onChanged: (bool? value) {
-                setState(() {
-                  if (value == true) {
-                    selectedSales.add(sale.id);
-                  } else {
-                    selectedSales.remove(sale.id);
-                  }
-                });
-              },
-              activeColor: Colors.green,
-            ),
+        leading:
+            isSettled
+                ? Icon(Icons.check_circle, color: Colors.green, size: 24)
+                : Checkbox(
+                  value: selectedSales.contains(sale.id),
+                  onChanged: (bool? value) {
+                    setState(() {
+                      if (value == true) {
+                        selectedSales.add(sale.id);
+                      } else {
+                        selectedSales.remove(sale.id);
+                      }
+                    });
+                  },
+                  activeColor: Colors.green,
+                ),
         title: Text(
           'Sale #${totalLength - index}',
           style: TextStyle(
@@ -605,15 +642,16 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
             ],
           ],
         ),
-        trailing: data['timestamp'] != null
-            ? Text(
-                _formatDate(data['timestamp'] as Timestamp),
-                style: TextStyle(
-                  fontSize: isMobile ? 10.0 : 12.0,
-                  color: Colors.grey.shade600,
-                ),
-              )
-            : const Text('N/A'),
+        trailing:
+            data['timestamp'] != null
+                ? Text(
+                  _formatDate(data['timestamp'] as Timestamp),
+                  style: TextStyle(
+                    fontSize: isMobile ? 10.0 : 12.0,
+                    color: Colors.grey.shade600,
+                  ),
+                )
+                : const Text('N/A'),
       ),
     );
   }
@@ -669,20 +707,21 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
     // Calculate total amount of selected sales
     double totalAmount = 0.0;
     List<String> selectedSaleDates = [];
-    
-    final salesQuery = await FirebaseFirestore.instance
-        .collection('hbl_sales')
-        .where(FieldPath.documentId, whereIn: selectedSales.toList())
-        .get();
-    
+
+    final salesQuery =
+        await FirebaseFirestore.instance
+            .collection('hbl_sales')
+            .where(FieldPath.documentId, whereIn: selectedSales.toList())
+            .get();
+
     for (var doc in salesQuery.docs) {
       final data = doc.data();
       totalAmount += (data['amount'] ?? 0.0);
       selectedSaleDates.add(data['date'] ?? 'N/A');
     }
-    
+
     amountReceivedController.clear();
-    
+
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
       builder: (BuildContext context) {
@@ -713,7 +752,8 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
             ),
             ElevatedButton(
               onPressed: () {
-                final amountReceived = double.tryParse(amountReceivedController.text) ?? 0.0;
+                final amountReceived =
+                    double.tryParse(amountReceivedController.text) ?? 0.0;
                 final expenses = totalAmount - amountReceived;
                 Navigator.of(context).pop({
                   'totalAmount': totalAmount,
@@ -729,12 +769,12 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
         );
       },
     );
-    
+
     if (result != null) {
       await _createSettlement(result);
     }
   }
-  
+
   Future<void> _createSettlement(Map<String, dynamic> settlementData) async {
     try {
       await FirebaseFirestore.instance.collection('hbl_settlements').add({
@@ -746,14 +786,14 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
         'expenses': settlementData['expenses'],
         'timestamp': FieldValue.serverTimestamp(),
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Settlement created successfully'),
           backgroundColor: Colors.green,
         ),
       );
-      
+
       setState(() {
         selectedSales.clear();
       });
@@ -770,7 +810,11 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
   Widget _buildSettlementsList(bool isMobile) {
     return Expanded(
       child: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('hbl_settlements').orderBy('timestamp', descending: true).snapshots(),
+        stream:
+            FirebaseFirestore.instance
+                .collection('hbl_settlements')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -814,12 +858,18 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
               itemCount: settlements.length,
               itemBuilder: (context, index) {
                 final data = settlements[index].data() as Map<String, dynamic>;
-                final settlementDate = data['settlement_date'] != null
-                    ? _formatDate(data['settlement_date'] as Timestamp)
-                    : 'N/A';
-                final sales = (data['selected_sale_dates'] as List<dynamic>?)?.join(', ') ?? 'N/A';
+                final settlementDate =
+                    data['settlement_date'] != null
+                        ? _formatDate(data['settlement_date'] as Timestamp)
+                        : 'N/A';
+                final sales =
+                    (data['selected_sale_dates'] as List<dynamic>?)?.join(
+                      ', ',
+                    ) ??
+                    'N/A';
                 final totalAmount = data['total_amount']?.toDouble() ?? 0.0;
-                final amountReceived = data['amount_received']?.toDouble() ?? 0.0;
+                final amountReceived =
+                    data['amount_received']?.toDouble() ?? 0.0;
                 final expenses = data['expenses']?.toDouble() ?? 0.0;
 
                 return Card(
@@ -836,7 +886,10 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                         Row(
                           children: [
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8.0,
+                                vertical: 4.0,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.green.shade100,
                                 borderRadius: BorderRadius.circular(8),
@@ -851,7 +904,11 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                               ),
                             ),
                             Spacer(),
-                            Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
+                            Icon(
+                              Icons.calendar_today,
+                              size: 16,
+                              color: Colors.grey.shade600,
+                            ),
                             SizedBox(width: 4),
                             Text(
                               settlementDate,
@@ -863,15 +920,27 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                           ],
                         ),
                         SizedBox(height: 12),
-                        _buildMobileSettlementRow('Sales Dates', sales, Icons.receipt),
-                        SizedBox(height: 8),
-                        _buildMobileSettlementRow('Total Amount', 'Rs. ${formatIndianNumber(totalAmount)}', Icons.account_balance_wallet),
-                        SizedBox(height: 8),
-                        _buildMobileSettlementRow('Amount Received', 'Rs. ${formatIndianNumber(amountReceived)}', Icons.payments),
+                        _buildMobileSettlementRow(
+                          'Sales Dates',
+                          sales,
+                          Icons.receipt,
+                        ),
                         SizedBox(height: 8),
                         _buildMobileSettlementRow(
-                          'Expenses', 
-                          'Rs. ${formatIndianNumber(expenses)}', 
+                          'Total Amount',
+                          'Rs. ${formatIndianNumber(totalAmount)}',
+                          Icons.account_balance_wallet,
+                        ),
+                        SizedBox(height: 8),
+                        _buildMobileSettlementRow(
+                          'Amount Received',
+                          'Rs. ${formatIndianNumber(amountReceived)}',
+                          Icons.payments,
+                        ),
+                        SizedBox(height: 8),
+                        _buildMobileSettlementRow(
+                          'Expenses',
+                          'Rs. ${formatIndianNumber(expenses)}',
                           Icons.trending_down,
                           valueColor: expenses > 0 ? Colors.red : Colors.green,
                         ),
@@ -906,7 +975,9 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                     fontWeight: FontWeight.bold,
                     color: Colors.green.shade800,
                   ),
-                  headingRowColor: MaterialStateProperty.all(Colors.green.shade50),
+                  headingRowColor: MaterialStateProperty.all(
+                    Colors.green.shade50,
+                  ),
                   border: TableBorder.all(
                     color: Colors.grey.shade200,
                     width: 1,
@@ -920,80 +991,101 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
                     DataColumn(label: Text('Amount Received')),
                     DataColumn(label: Text('Expenses')),
                   ],
-                  rows: settlements.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final data = entry.value.data() as Map<String, dynamic>;
-                    final settlementDate = data['settlement_date'] != null
-                        ? _formatDate(data['settlement_date'] as Timestamp)
-                        : 'N/A';
-                    final sales = (data['selected_sale_dates'] as List<dynamic>?)?.join(', ') ?? 'N/A';
-                    final totalAmount = data['total_amount']?.toDouble() ?? 0.0;
-                    final amountReceived = data['amount_received']?.toDouble() ?? 0.0;
-                    final expenses = data['expenses']?.toDouble() ?? 0.0;
+                  rows:
+                      settlements.asMap().entries.map((entry) {
+                        final index = entry.key;
+                        final data = entry.value.data() as Map<String, dynamic>;
+                        final settlementDate =
+                            data['settlement_date'] != null
+                                ? _formatDate(
+                                  data['settlement_date'] as Timestamp,
+                                )
+                                : 'N/A';
+                        final sales =
+                            (data['selected_sale_dates'] as List<dynamic>?)
+                                ?.join(', ') ??
+                            'N/A';
+                        final totalAmount =
+                            data['total_amount']?.toDouble() ?? 0.0;
+                        final amountReceived =
+                            data['amount_received']?.toDouble() ?? 0.0;
+                        final expenses = data['expenses']?.toDouble() ?? 0.0;
 
-                    return DataRow(
-                      color: MaterialStateProperty.all(
-                        index % 2 == 0 ? Colors.grey.shade50 : Colors.white,
-                      ),
-                      cells: [
-                        DataCell(
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                            decoration: BoxDecoration(
-                              color: Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Settlement #${settlements.length - index}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: Colors.green.shade800,
+                        return DataRow(
+                          color: MaterialStateProperty.all(
+                            index % 2 == 0 ? Colors.grey.shade50 : Colors.white,
+                          ),
+                          cells: [
+                            DataCell(
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                  vertical: 4.0,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Settlement #${settlements.length - index}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.green.shade800,
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                        DataCell(Text(settlementDate)),
-                        DataCell(
-                          Container(
-                            constraints: BoxConstraints(maxWidth: 400.0),
-                            child: Text(
-                              sales,
-                              overflow: TextOverflow.ellipsis,
-                              maxLines: 1,
-                            ),
-                          ),
-                        ),
-                        DataCell(
-                          Text(
-                            'Rs. ${formatIndianNumber(totalAmount)}',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        DataCell(
-                          Text(
-                            'Rs. ${formatIndianNumber(amountReceived)}',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
-                        ),
-                        DataCell(
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-                            decoration: BoxDecoration(
-                              color: expenses > 0 ? Colors.red.shade100 : Colors.green.shade100,
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'Rs. ${formatIndianNumber(expenses)}',
-                              style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: expenses > 0 ? Colors.red.shade800 : Colors.green.shade800,
+                            DataCell(Text(settlementDate)),
+                            DataCell(
+                              Container(
+                                constraints: BoxConstraints(maxWidth: 400.0),
+                                child: Text(
+                                  sales,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                ),
                               ),
                             ),
-                          ),
-                        ),
-                      ],
-                    );
-                  }).toList(),
+                            DataCell(
+                              Text(
+                                'Rs. ${formatIndianNumber(totalAmount)}',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataCell(
+                              Text(
+                                'Rs. ${formatIndianNumber(amountReceived)}',
+                                style: TextStyle(fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            DataCell(
+                              Container(
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: 8.0,
+                                  vertical: 4.0,
+                                ),
+                                decoration: BoxDecoration(
+                                  color:
+                                      expenses > 0
+                                          ? Colors.red.shade100
+                                          : Colors.green.shade100,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Text(
+                                  'Rs. ${formatIndianNumber(expenses)}',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color:
+                                        expenses > 0
+                                            ? Colors.red.shade800
+                                            : Colors.green.shade800,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        );
+                      }).toList(),
                 ),
               ),
             );
@@ -1003,7 +1095,12 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
     );
   }
 
-  Widget _buildMobileSettlementRow(String label, String value, IconData icon, {Color? valueColor}) {
+  Widget _buildMobileSettlementRow(
+    String label,
+    String value,
+    IconData icon, {
+    Color? valueColor,
+  }) {
     return Row(
       children: [
         Icon(icon, size: 16, color: Colors.grey.shade600),
@@ -1035,4 +1132,4 @@ class _HBLPointOfSaleState extends State<HBLPointOfSale> {
       ],
     );
   }
-} 
+}

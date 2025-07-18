@@ -523,6 +523,14 @@ class _CustomersState extends State<Customers> {
                   ),
                   title: Row(
                     children: [
+                      Text(
+                        ' 0${index + 1}. ',
+                        style: TextStyle(
+                          fontSize: isMobile ? 16.0 : 20.0,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                       Expanded(
                         child: Text(
                           data['name'],

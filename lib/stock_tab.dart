@@ -473,6 +473,7 @@ class _StockTabState extends State<StockTab> {
 
   void _showStockHistoryDialog(BuildContext context, bool isMobile, double spacing, double maxWidth) async {
     final ScrollController verticalController = ScrollController();
+    final ScrollController horizontalController = ScrollController();
     showDialog(
       context: context,
       builder: (context) {
@@ -505,90 +506,80 @@ class _StockTabState extends State<StockTab> {
                           icon: const Icon(Icons.close),
                           onPressed: () {
                             verticalController.dispose();
+                            horizontalController.dispose();
                             Navigator.of(context).pop();
                           },
                         ),
                       ],
                     ),
                     SizedBox(height: spacing),
-                    FutureBuilder<QuerySnapshot>(
-                      future: FirebaseFirestore.instance.collection('stock').orderBy('date').get(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.waiting) {
-                          return const Center(child: CircularProgressIndicator());
-                        }
-                        if (snapshot.hasError) {
-                          return Center(child: Text('Error: \\${snapshot.error}'));
-                        }
-                        final docs = snapshot.data?.docs ?? [];
-                        double runningPetrol = 0;
-                        double runningDiesel = 0;
-                        final rows = <DataRow>[];
-                        for (var i = 0; i < docs.length; i++) {
-                          final doc = docs[i];
-                          final data = doc.data() as Map<String, dynamic>;
-                          final date = (data['date'] as Timestamp?)?.toDate();
-                          final petrol = (data['petrol'] is num) ? (data['petrol'] as num).toDouble() : 0.0;
-                          final diesel = (data['diesel'] is num) ? (data['diesel'] as num).toDouble() : 0.0;
-                          runningPetrol += petrol;
-                          runningDiesel += diesel;
-                          rows.add(DataRow(
-                            color: isMobile ? null : MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
-                              return i % 2 == 0 ? Colors.white : Colors.green.shade50;
-                            }),
-                            cells: [
-                              DataCell(Text(date != null ? DateFormat('dd/MM/yyyy').format(date) : '-', style: TextStyle(fontSize: isMobile ? 13 : 16))),
-                              DataCell(Text(NumberFormat('#,##,##,##,##0.00', 'en_IN').format(petrol), style: TextStyle(fontSize: isMobile ? 13 : 16))),
-                              DataCell(Text(NumberFormat('#,##,##,##,##0.00', 'en_IN').format(diesel), style: TextStyle(fontSize: isMobile ? 13 : 16))),
-                              DataCell(Text(NumberFormat('#,##,##,##,##0.00', 'en_IN').format(runningPetrol), style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 13 : 16, color: Colors.green.shade800))),
-                              DataCell(Text(NumberFormat('#,##,##,##,##0.00', 'en_IN').format(runningDiesel), style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 13 : 16, color: Colors.green.shade800))),
-                            ],
-                          ));
-                        }
-                        final table = DataTable(
-                          columns: [
-                            DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
-                            DataColumn(label: Text('Petrol (Litres)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
-                            DataColumn(label: Text('Diesel (Litres)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
-                            DataColumn(label: Text('Petrol Stock', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
-                            DataColumn(label: Text('Diesel Stock', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
-                          ],
-                          rows: rows,
-                          headingRowColor: MaterialStateProperty.all(Colors.green.shade100),
-                          dataRowColor: isMobile ? MaterialStateProperty.all(Colors.white) : null,
-                          dividerThickness: 1,
-                          columnSpacing: isMobile ? 12 : 28,
-                          horizontalMargin: isMobile ? 6 : 18,
-                          showBottomBorder: true,
-                        );
-                        if (isMobile) {
-                          return SingleChildScrollView(
-                            scrollDirection: Axis.horizontal,
-                            child: table,
-                          );
-                        } else {
-                          return Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.green.shade100, width: 1.5),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.green.shade100.withOpacity(0.18),
-                                  blurRadius: 16,
-                                  spreadRadius: 2,
-                                  offset: const Offset(0, 6),
-                                ),
+                    SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.7,
+                      child: FutureBuilder<QuerySnapshot>(
+                        future: FirebaseFirestore.instance.collection('stock').orderBy('date').get(),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState == ConnectionState.waiting) {
+                            return const Center(child: CircularProgressIndicator());
+                          }
+                          if (snapshot.hasError) {
+                            return Center(child: Text('Error: \\${snapshot.error}'));
+                          }
+                          final docs = snapshot.data?.docs ?? [];
+                          double runningPetrol = 0;
+                          double runningDiesel = 0;
+                          final rows = <DataRow>[];
+                          for (var i = 0; i < docs.length; i++) {
+                            final doc = docs[i];
+                            final data = doc.data() as Map<String, dynamic>;
+                            final date = (data['date'] as Timestamp?)?.toDate();
+                            final petrol = (data['petrol'] is num) ? (data['petrol'] as num).toDouble() : 0.0;
+                            final diesel = (data['diesel'] is num) ? (data['diesel'] as num).toDouble() : 0.0;
+                            runningPetrol += petrol;
+                            runningDiesel += diesel;
+                            rows.add(DataRow(
+                              color: isMobile ? null : MaterialStateProperty.resolveWith<Color?>((Set<MaterialState> states) {
+                                return i % 2 == 0 ? Colors.white : Colors.green.shade50;
+                              }),
+                              cells: [
+                                DataCell(Text(date != null ? DateFormat('dd/MM/yyyy').format(date) : '-', style: TextStyle(fontSize: isMobile ? 13 : 16))),
+                                DataCell(Text(NumberFormat('#,##,##,##,##0.00', 'en_IN').format(petrol), style: TextStyle(fontSize: isMobile ? 13 : 16))),
+                                DataCell(Text(NumberFormat('#,##,##,##,##0.00', 'en_IN').format(diesel), style: TextStyle(fontSize: isMobile ? 13 : 16))),
+                                DataCell(Text(NumberFormat('#,##,##,##,##0.00', 'en_IN').format(runningPetrol), style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 13 : 16, color: Colors.green.shade800))),
+                                DataCell(Text(NumberFormat('#,##,##,##,##0.00', 'en_IN').format(runningDiesel), style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 13 : 16, color: Colors.green.shade800))),
                               ],
-                            ),
-                            constraints: const BoxConstraints(maxHeight: 420),
+                            ));
+                          }
+                          final table = DataTable(
+                            columns: [
+                              DataColumn(label: Text('Date', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
+                              DataColumn(label: Text('Petrol (Litres)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
+                              DataColumn(label: Text('Diesel (Litres)', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
+                              DataColumn(label: Text('Petrol Stock', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
+                              DataColumn(label: Text('Diesel Stock', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 17))),
+                            ],
+                            rows: rows,
+                            headingRowColor: MaterialStateProperty.all(Colors.green.shade100),
+                            dataRowColor: isMobile ? MaterialStateProperty.all(Colors.white) : null,
+                            dividerThickness: 1,
+                            columnSpacing: isMobile ? 12 : 28,
+                            horizontalMargin: isMobile ? 6 : 18,
+                            showBottomBorder: true,
+                          );
+                          // Attach scrollbars to their respective controllers
+                          return Scrollbar(
+                            controller: verticalController,
+                            thumbVisibility: true,
+                            interactive: true,
                             child: Scrollbar(
+                              controller: horizontalController,
                               thumbVisibility: true,
-                              controller: verticalController,
+                              interactive: true,
+                              notificationPredicate: (notification) => notification.depth == 1,
                               child: SingleChildScrollView(
                                 controller: verticalController,
                                 scrollDirection: Axis.vertical,
                                 child: SingleChildScrollView(
+                                  controller: horizontalController,
                                   scrollDirection: Axis.horizontal,
                                   child: Padding(
                                     padding: const EdgeInsets.all(8.0),
@@ -598,8 +589,8 @@ class _StockTabState extends State<StockTab> {
                               ),
                             ),
                           );
-                        }
-                      },
+                        },
+                      ),
                     ),
                   ],
                 );

@@ -6,6 +6,7 @@ import 'home_page.dart';
 import 'auth/password_screen.dart';
 import 'auth/activity_service.dart';
 import 'auth/auth_service.dart';
+import 'package:flutter/foundation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,17 +19,20 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
-    FirebaseFirestore.instance.settings = const Settings(
-      persistenceEnabled: true,
-      cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
-      host: null,
-      sslEnabled: true,
-    );
-    
-    // Configure Firebase Firestore for better thread safety
-    FirebaseFirestore.instance.enablePersistence(const PersistenceSettings(synchronizeTabs: true));
+    if (kIsWeb) {
+      // Only for web
+      await FirebaseFirestore.instance.enablePersistence(const PersistenceSettings(synchronizeTabs: true));
+    } else {
+      FirebaseFirestore.instance.settings = const Settings(
+        persistenceEnabled: true,
+        cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+        host: null,
+        sslEnabled: true,
+      );
+      // Do NOT call enablePersistence for non-web
+    }
   } catch (e) {
-    debugPrint('Firebase initialization error: ${e.toString().split('\n')[0]}');
+    debugPrint('Firebase initialization error:  [0m${e.toString().split('\n')[0]}');
   }
   
   // Set up error handling for Firebase operations

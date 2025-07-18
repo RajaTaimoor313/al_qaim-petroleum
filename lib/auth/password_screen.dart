@@ -187,9 +187,10 @@ class _PasswordScreenState extends State<PasswordScreen> {
                                 color: Colors.green.shade700,
                               ),
                               const SizedBox(height: 24.0),
-                              const Text(
+                              Text(
                                 'AL QAIM PETROLEUM',
-                                style: TextStyle(
+                                textAlign: TextAlign.center,
+                                style: const TextStyle(
                                   fontSize: 24.0,
                                   fontWeight: FontWeight.bold,
                                   color: Colors.black87,
