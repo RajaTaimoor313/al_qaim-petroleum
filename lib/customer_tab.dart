@@ -284,154 +284,199 @@ class _CustomersState extends State<Customers> {
 
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(height: spacing * 1.5),
-            TextFormField(
-              controller: nameController,
-              decoration: InputDecoration(
-                labelText: 'Customer Name',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-              validator:
-                  (value) =>
-                      value!.isEmpty ? 'Please enter customer name' : null,
-            ),
-            SizedBox(height: spacing),
-            TextFormField(
-              controller: phoneController,
-              decoration: InputDecoration(
-                labelText: 'Phone Number',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-              keyboardType: TextInputType.phone,
-              validator:
-                  (value) =>
-                      value!.isEmpty
-                          ? 'Please enter phone number'
-                          : (RegExp(r'^\d{10,}$').hasMatch(value)
-                              ? null
-                              : 'Invalid phone number'),
-            ),
-            SizedBox(height: spacing),
-            TextFormField(
-              controller: balanceController,
-              decoration: InputDecoration(
-                labelText: 'Previous Balance',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-              keyboardType: TextInputType.number,
-              validator: (value) {
-                if (value!.isEmpty) return 'Please enter previous balance';
-                final balance = double.tryParse(value);
-                if (balance == null) return 'Invalid number';
-                if (balance < 0) {
-                  return 'Balance must be a Positive Value';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: spacing),
-            TextFormField(
-              controller: addressController,
-              decoration: InputDecoration(
-                labelText: 'CNIC',
-                hintText: '13-digit CNIC number (optional)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-              keyboardType: TextInputType.number,
-              // Making CNIC field optional
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return null; // Optional field
-                }
-                // If provided, validate it has 13 digits
-                if (!RegExp(r'^\d{13}$').hasMatch(value)) {
-                  return 'CNIC should have 13 digits';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: spacing),
-            TextFormField(
-              controller: pageNumberController,
-              decoration: InputDecoration(
-                labelText: 'Page Number',
-                hintText: 'Enter page number in register (optional)',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-              keyboardType: TextInputType.number,
-              // Making Page Number field optional
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return null; // Optional field
-                }
-                // If provided, validate it's a number
-                if (!RegExp(r'^\d+$').hasMatch(value)) {
-                  return 'Page Number should be a valid number';
-                }
-                return null;
-              },
-            ),
-            SizedBox(height: spacing + 4.0),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _isLoading ? null : _submitCustomerForm,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
-                  foregroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 24.0 : 32.0,
-                    vertical: isMobile ? 10.0 : 12.0,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child:
-                    _isLoading
-                        ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.white,
+      child: Stack(
+        children: [
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            color: Colors.green.shade50,
+            child: Padding(
+              padding: EdgeInsets.all(isMobile ? 16 : 24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Icons.person_add, color: Colors.green.shade700, size: isMobile ? 22 : 28),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Add Customer',
+                          style: TextStyle(
+                            fontSize: isMobile ? 18 : 22,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green.shade800,
                           ),
-                        )
-                        : Text(
-                          'Submit',
-                          style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
                         ),
+                      ],
+                    ),
+                    SizedBox(height: spacing * 1.2),
+                    Container(
+                      padding: EdgeInsets.all(isMobile ? 10 : 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.green.shade100.withOpacity(0.10),
+                            blurRadius: 8,
+                            spreadRadius: 1,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextFormField(
+                            controller: nameController,
+                            decoration: InputDecoration(
+                              labelText: 'Customer Name *',
+                              prefixIcon: const Icon(Icons.person),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            validator: (value) => value!.isEmpty ? 'Please enter customer name' : null,
+                          ),
+                          SizedBox(height: spacing),
+                          TextFormField(
+                            controller: phoneController,
+                            decoration: InputDecoration(
+                              labelText: 'Phone Number *',
+                              prefixIcon: const Icon(Icons.phone),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            keyboardType: TextInputType.phone,
+                            validator: (value) => value!.isEmpty
+                                ? 'Please enter phone number'
+                                : (RegExp(r'^\d{10,}').hasMatch(value)
+                                    ? null
+                                    : 'Invalid phone number'),
+                          ),
+                          SizedBox(height: spacing),
+                          TextFormField(
+                            controller: balanceController,
+                            decoration: InputDecoration(
+                              labelText: 'Previous Balance *',
+                              prefixIcon: const Icon(Icons.account_balance_wallet),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value!.isEmpty) return 'Please enter previous balance';
+                              final balance = double.tryParse(value);
+                              if (balance == null) return 'Invalid number';
+                              if (balance < 0) {
+                                return 'Balance must be a Positive Value';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                          TextFormField(
+                            controller: addressController,
+                            decoration: InputDecoration(
+                              labelText: 'CNIC',
+                              hintText: '13-digit CNIC number (optional)',
+                              prefixIcon: const Icon(Icons.credit_card),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            keyboardType: TextInputType.number,
+                            // Making CNIC field optional
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return null; // Optional field
+                              }
+                              // If provided, validate it has 13 digits
+                              if (!RegExp(r'^\d{13}').hasMatch(value)) {
+                                return 'CNIC should have 13 digits';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: spacing),
+                          TextFormField(
+                            controller: pageNumberController,
+                            decoration: InputDecoration(
+                              labelText: 'Page Number',
+                              hintText: 'Enter page number in register (optional)',
+                              prefixIcon: const Icon(Icons.book),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            keyboardType: TextInputType.number,
+                            // Making Page Number field optional
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return null; // Optional field
+                              }
+                              // If provided, validate it's a number
+                              if (!RegExp(r'^\d+').hasMatch(value)) {
+                                return 'Page Number should be a valid number';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: spacing + 4.0),
+                          SizedBox(
+                            width: double.infinity,
+                            child: ElevatedButton.icon(
+                              icon: _isLoading
+                                  ? const SizedBox(
+                                      height: 20,
+                                      width: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: Colors.white,
+                                      ),
+                                    )
+                                  : const Icon(Icons.save),
+                              label: Text(
+                                _isLoading ? 'Processing...' : 'Submit',
+                                style: TextStyle(fontSize: isMobile ? 14.0 : 16.0),
+                              ),
+                              onPressed: _isLoading ? null : _submitCustomerForm,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.green,
+                                foregroundColor: Colors.white,
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: isMobile ? 24.0 : 32.0,
+                                  vertical: isMobile ? 14.0 : 18.0,
+                                ),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                elevation: 2,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            // Add padding below submit button for any device
-            SizedBox(height: spacing * 4),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -524,7 +569,7 @@ class _CustomersState extends State<Customers> {
                   title: Row(
                     children: [
                       Text(
-                        ' 0${index + 1}. ',
+                        ' ${index + 1}. ',
                         style: TextStyle(
                           fontSize: isMobile ? 16.0 : 20.0,
                           fontWeight: FontWeight.bold,

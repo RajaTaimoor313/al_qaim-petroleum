@@ -397,7 +397,7 @@ class _HomePageState extends State<HomePage> with WidgetsBindingObserver {
 
 // Replace the ViewChartTab placeholder with a real chart view
 class ViewChartTab extends StatefulWidget {
-  const ViewChartTab({Key? key}) : super(key: key);
+  const ViewChartTab({super.key});
 
   @override
   State<ViewChartTab> createState() => _ViewChartTabState();

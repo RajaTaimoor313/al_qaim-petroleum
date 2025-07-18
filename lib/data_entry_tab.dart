@@ -162,271 +162,280 @@ class _AddDataState extends State<AddData> {
 
   // Transaction form extracted from the existing form
   Widget _buildTransactionForm(double spacing, bool isMobile) {
-    return Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Transaction Details',
-            style: TextStyle(
-              fontSize: isMobile ? 18 : 20,
-              fontWeight: FontWeight.bold,
-              color: Colors.green.shade800,
-            ),
-          ),
-          SizedBox(height: spacing),
-          _buildCustomerSearch(),
-          if (errorMessage != null) ...[
-            SizedBox(height: spacing - 8),
-            Text(
-              errorMessage!,
-              style: TextStyle(color: Colors.red, fontSize: isMobile ? 12 : 14),
-            ),
-          ],
-          SizedBox(height: spacing),
-          TextFormField(
-            controller: phoneController,
-            decoration: InputDecoration(
-              labelText: 'Phone Number',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-              enabled: !customerFound,
-            ),
-            keyboardType: TextInputType.phone,
-            validator:
-                (value) => value!.isEmpty ? 'Please enter phone number' : null,
-          ),
-          SizedBox(height: spacing),
-          TextFormField(
-            controller: pageNumberController,
-            decoration: InputDecoration(
-              labelText: 'Page Number',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-              enabled: !customerFound,
-            ),
-            keyboardType: TextInputType.number,
-            readOnly: true,
-          ),
-          SizedBox(height: spacing),
-          TextFormField(
-            controller: balanceController,
-            decoration: InputDecoration(
-              labelText: 'Previous Balance',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-              enabled: !customerFound,
-            ),
-            keyboardType: TextInputType.number,
-            validator:
-                (value) =>
-                    value!.isEmpty
-                        ? 'Please enter previous balance'
-                        : (double.tryParse(value) != null
-                            ? null
-                            : 'Invalid number'),
-          ),
-          SizedBox(height: spacing),
-          InkWell(
-            onTap: () => _selectDate(context),
-            child: InputDecorator(
-              decoration: InputDecoration(
-                labelText: 'Date',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                filled: true,
-                fillColor: Colors.grey.shade50,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return Stack(
+      children: [
+        Card(
+          elevation: 4,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          color: Colors.green.shade50,
+          child: Padding(
+            padding: EdgeInsets.all(isMobile ? 16 : 24),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(DateFormat('dd/MM/yyyy').format(selectedDate)),
-                  const Icon(Icons.calendar_today),
+                  Row(
+                    children: [
+                      Icon(Icons.swap_horiz, color: Colors.green.shade700, size: isMobile ? 22 : 28),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Transaction Details',
+                        style: TextStyle(
+                          fontSize: isMobile ? 18 : 22,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.green.shade800,
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: spacing * 1.2),
+                  Container(
+                    padding: EdgeInsets.all(isMobile ? 10 : 16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.green.shade100.withOpacity(0.10),
+                          blurRadius: 8,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildCustomerSearch(),
+                        if (errorMessage != null) ...[
+                          SizedBox(height: spacing - 8),
+                          Text(
+                            errorMessage!,
+                            style: TextStyle(color: Colors.red, fontSize: isMobile ? 12 : 14),
+                          ),
+                        ],
+                        SizedBox(height: spacing),
+                        TextFormField(
+                          controller: phoneController,
+                          decoration: InputDecoration(
+                            labelText: 'Phone Number *',
+                            prefixIcon: const Icon(Icons.phone),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            enabled: !customerFound,
+                          ),
+                          keyboardType: TextInputType.phone,
+                          validator: (value) => value!.isEmpty ? 'Please enter phone number' : null,
+                        ),
+                        SizedBox(height: spacing),
+                        TextFormField(
+                          controller: pageNumberController,
+                          decoration: InputDecoration(
+                            labelText: 'Page Number',
+                            prefixIcon: const Icon(Icons.book),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            enabled: !customerFound,
+                          ),
+                          keyboardType: TextInputType.number,
+                          readOnly: true,
+                        ),
+                        SizedBox(height: spacing),
+                        TextFormField(
+                          controller: balanceController,
+                          decoration: InputDecoration(
+                            labelText: 'Previous Balance *',
+                            prefixIcon: const Icon(Icons.account_balance_wallet),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                            enabled: !customerFound,
+                          ),
+                          keyboardType: TextInputType.number,
+                          validator: (value) => value!.isEmpty
+                              ? 'Please enter previous balance'
+                              : (double.tryParse(value) != null ? null : 'Invalid number'),
+                        ),
+                        SizedBox(height: spacing),
+                        InkWell(
+                          onTap: () => _selectDate(context),
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: 'Date *',
+                              prefixIcon: const Icon(Icons.calendar_today),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(DateFormat('dd/MM/yyyy').format(selectedDate)),
+                                const Icon(Icons.edit_calendar, color: Colors.green),
+                              ],
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: spacing),
+                        Divider(height: spacing * 2, color: Colors.green.shade100),
+                        TextFormField(
+                          controller: amountPaidController,
+                          decoration: InputDecoration(
+                            labelText: 'Amount Paid *',
+                            prefixIcon: const Icon(Icons.arrow_upward, color: Colors.green),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) => setState(() {}),
+                          validator: (value) {
+                            if (value!.isEmpty) return 'Please enter amount paid';
+                            final amount = double.tryParse(value);
+                            if (amount == null) return 'Invalid number';
+                            if (amount < 0 || amount > 1000000) {
+                              return 'Amount must be between 0 and 1,000,000';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: spacing),
+                        TextFormField(
+                          controller: amountTakenController,
+                          decoration: InputDecoration(
+                            labelText: 'Amount Taken *',
+                            prefixIcon: const Icon(Icons.arrow_downward, color: Colors.red),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          keyboardType: TextInputType.number,
+                          onChanged: (value) => setState(() {}),
+                          validator: (value) {
+                            if (value!.isEmpty) return 'Please enter amount taken';
+                            final amount = double.tryParse(value);
+                            if (amount == null) return 'Invalid number';
+                            if (amount < 0 || amount > 1000000) {
+                              return 'Amount must be between 0 and 1,000,000';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: spacing + 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            icon: isSearching
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : const Icon(Icons.save),
+                            label: Text(
+                              isSearching ? 'Processing...' : 'Add Transaction',
+                              style: TextStyle(
+                                fontSize: isMobile ? 14 : 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            onPressed: isSearching
+                                ? null
+                                : () async {
+                                    try {
+                                      if (isSearching) return;
+                                      if (!customerFound || selectedCustomerId == null || amountPaidController.text.trim().isEmpty || amountTakenController.text.trim().isEmpty) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Please select a customer and enter all required values'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      if (double.tryParse(amountPaidController.text.trim()) == null || double.tryParse(amountTakenController.text.trim()) == null) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(
+                                            content: Text('Please enter valid numbers for amount fields'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        return;
+                                      }
+                                      await _submitTransaction();
+                                    } catch (e) {
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Error: $e'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                        setState(() => isSearching = false);
+                                      }
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isMobile ? 24 : 32,
+                                vertical: isMobile ? 14 : 18,
+                              ),
+                              disabledBackgroundColor: Colors.grey,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              elevation: 2,
+                            ),
+                          ),
+                        ),
+                        if (customerFound) ...[
+                          SizedBox(height: spacing - 4),
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton.icon(
+                              icon: const Icon(Icons.refresh, color: Colors.green),
+                              onPressed: _resetForm,
+                              label: const Text('Reset Form'),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
           ),
-          SizedBox(height: spacing),
-          TextFormField(
-            controller: amountPaidController,
-            decoration: InputDecoration(
-              labelText: 'Amount Paid',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+        ),
+        if (isSearching)
+          Positioned.fill(
+            child: Container(
+              color: Colors.white.withOpacity(0.6),
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.green),
               ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-            ),
-            keyboardType: TextInputType.number,
-            onChanged: (value) {
-              // Trigger a rebuild to update the button state
-              setState(() {});
-            },
-            validator: (value) {
-              if (value!.isEmpty) return 'Please enter amount paid';
-              final amount = double.tryParse(value);
-              if (amount == null) return 'Invalid number';
-              if (amount < 0 || amount > 1000000) {
-                return 'Amount must be between 0 and 1,000,000';
-              }
-              return null;
-            },
-          ),
-          SizedBox(height: spacing),
-          TextFormField(
-            controller: amountTakenController,
-            decoration: InputDecoration(
-              labelText: 'Amount Taken',
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              filled: true,
-              fillColor: Colors.grey.shade50,
-            ),
-            keyboardType: TextInputType.number,
-            onChanged: (value) {
-              // Trigger a rebuild to update the button state
-              setState(() {});
-            },
-            validator: (value) {
-              if (value!.isEmpty) return 'Please enter amount taken';
-              final amount = double.tryParse(value);
-              if (amount == null) return 'Invalid number';
-              if (amount < 0 || amount > 1000000) {
-                return 'Amount must be between 0 and 1,000,000';
-              }
-              return null;
-            },
-          ),
-          SizedBox(height: spacing + 8),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed:
-                  isSearching
-                      ? null
-                      : () async {
-                        try {
-                          // Prevent multiple submissions by checking if already processing
-                          if (isSearching) {
-                            return;
-                          }
-
-                          // Validate form
-                          if (!customerFound ||
-                              selectedCustomerId == null ||
-                              amountPaidController.text.trim().isEmpty ||
-                              amountTakenController.text.trim().isEmpty) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Please select a customer and enter all required values',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          if (double.tryParse(
-                                    amountPaidController.text.trim(),
-                                  ) ==
-                                  null ||
-                              double.tryParse(
-                                    amountTakenController.text.trim(),
-                                  ) ==
-                                  null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Please enter valid numbers for amount fields',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            return;
-                          }
-
-                          await _submitTransaction();
-                        } catch (e) {
-                          if (mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Error: $e'),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                            setState(() => isSearching = false);
-                          }
-                        }
-                      },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 24 : 32,
-                  vertical: isMobile ? 12 : 15,
-                ),
-                disabledBackgroundColor: Colors.grey,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child:
-                  isSearching
-                      ? const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
-                            ),
-                          ),
-                          SizedBox(width: 10),
-                          Text(
-                            'Processing...',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      )
-                      : Text(
-                        'Add Transaction',
-                        style: TextStyle(
-                          fontSize: isMobile ? 14 : 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
             ),
           ),
-          if (customerFound) ...[
-            SizedBox(height: spacing - 4),
-            SizedBox(
-              width: double.infinity,
-              child: TextButton(
-                onPressed: _resetForm,
-                child: const Text('Reset Form'),
-              ),
-            ),
-          ],
-        ],
-      ),
+      ],
     );
   }
 

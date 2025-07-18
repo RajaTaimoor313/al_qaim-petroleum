@@ -444,42 +444,40 @@ class _DashboardState extends State<Dashboard> {
             ),
           );
 
+    // Refresh button
+    final refreshButton = IconButton(
+      icon: Icon(Icons.refresh, color: Colors.green.shade700),
+      tooltip: 'Refresh',
+      onPressed: () async {
+        await _fetchDashboardData();
+      },
+    );
+
     // Title widget
+    final String dashboardDateLabel = isRangeMode && rangeStartDate != null && rangeEndDate != null
+        ? '${DateFormat('MMM d, yyyy').format(rangeStartDate!)} - ${DateFormat('MMM d, yyyy').format(rangeEndDate!)}'
+        : DateFormat('MMM d, yyyy').format(selectedDate);
+
     final titleWidget = Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Dashboard',
-              style: TextStyle(
+      children: [
+        Text(
+          'Dashboard',
+          style: TextStyle(
             fontSize: titleFontSize,
-                fontWeight: FontWeight.bold,
-                color: Colors.green.shade800,
-              ),
-            ),
-            const SizedBox(height: 4),
-        Row(
-          children: [
-            Text(
-              'Statistics for ',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontWeight: FontWeight.w500,
-                fontSize: subtitleFontSize,
-              ),
-            ),
-            GestureDetector(
-              onTap: () => _selectDate(context),
-              child: Text(
-                DateFormat('MMM d, yyyy').format(selectedDate),
-                style: TextStyle(
-                  color: Colors.green.shade600,
-                  fontWeight: FontWeight.w500,
-                  fontSize: subtitleFontSize,
-                ),
-              ),
-            ),
-          ],
+            fontWeight: FontWeight.bold,
+            color: Colors.green.shade800,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          dashboardDateLabel,
+          style: TextStyle(
+            color: Colors.green.shade600,
+            fontWeight: FontWeight.w600,
+            fontSize: subtitleFontSize + 2,
+          ),
         ),
       ],
     );
@@ -495,7 +493,13 @@ class _DashboardState extends State<Dashboard> {
               children: [
                 titleWidget,
                 const SizedBox(height: 8),
-                toggleWidget,
+                Row(
+                  children: [
+                    toggleWidget,
+                    const SizedBox(width: 8),
+                    refreshButton,
+                  ],
+                ),
                 const SizedBox(height: 8),
                 dateWidget
               ],
@@ -508,6 +512,8 @@ class _DashboardState extends State<Dashboard> {
                   children: [
                     toggleWidget,
                     const SizedBox(width: 16),
+                    refreshButton,
+                    const SizedBox(width: 8),
                     dateWidget,
                   ],
                 ),
